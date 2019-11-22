@@ -19,10 +19,15 @@ cdef cppclass Entry:
 
 cdef class Item:
 	cdef Entry* _e
+	cdef unicode _cached_key
+	cdef bint _cached_key_set
 
 	@property
 	def key(self):
-		return self._e.key.decode('utf8')
+		if not self._cached_key_set:
+			self._cached_key = self._e.key.decode()
+
+		return self._cached_key
 
 	@property
 	def value(self):
