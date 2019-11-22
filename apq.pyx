@@ -6,7 +6,7 @@ from libcpp.vector cimport vector
 from libcpp.unordered_map cimport unordered_map
 from libcpp.limits cimport numeric_limits
 
-from cython.operator cimport preincrement
+from cython.operator cimport dereference, preincrement
 
 
 cdef cppclass Entry:
@@ -131,12 +131,20 @@ cdef class AddressablePQ:
 			# heap and lookup map don't have the same size
 			return False
 
-		for i in range(self._heap.size()):
-			if self._heap[i].index != i:
+		cdef Entry* e
+		cdef unsigned long long i, leftchildpos, rightchildpos
+		cdef vector[Entry*].iterator begin_it, it
+
+		begin_it = self._heap.begin()
+		it = begin_it
+		while it != self._heap.end():
+			e = dereference(it)
+			i = it - begin_it
+			if e.index != i:
 				# wrong index is stored in the entry
 				return False
 
-			if &self._lookup_map[self._heap[i].key] != self._heap[i]:
+			if &self._lookup_map[e.key] != e:
 				# key is not mapped to entry
 				return False
 
@@ -148,6 +156,8 @@ cdef class AddressablePQ:
 			if rightchildpos < self._heap.size() and self._compare(rightchildpos, i):
 					# right child is less than parent
 					return False
+
+			preincrement(it)
 
 		return True
 
