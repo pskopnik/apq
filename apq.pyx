@@ -4,6 +4,7 @@
 from libcpp.string cimport string
 from libcpp.vector cimport vector
 from libcpp.unordered_map cimport unordered_map
+from libcpp.limits cimport numeric_limits
 
 from cython.operator cimport preincrement
 
@@ -42,6 +43,10 @@ cdef class AddressablePQ:
 	cdef vector[Entry*] _heap
 	cdef unordered_map[string, Entry] _lookup_map
 	cdef unsigned long long int _ts
+	cdef bint _max_heap
+
+	def __cinit__(self, bint max_heap=False):
+		self._max_heap = max_heap
 
 	def __len__(self):
 		return self._heap.size()
@@ -61,7 +66,7 @@ cdef class AddressablePQ:
 	def __delitem__(self, object identifier):
 		cdef Entry* e = self._entry_from_identifier(identifier)
 		# TODO siftdown only?
-		self._change_value(e, 0.0, 0)
+		self._change_value(e, self._lowest_value(), 0)
 		self._pop_heap()
 		self._lookup_map.erase(e.key)
 
@@ -173,10 +178,19 @@ cdef class AddressablePQ:
 		cdef Entry* a_entry = self._heap[a]
 		cdef Entry* b_entry = self._heap[b]
 		if a_entry.value < b_entry.value:
-			return True
+			# a < b. Return True if min_heap, return False if max_heap
+			return not self._max_heap
 		if a_entry.value == b_entry.value and a_entry.change_ts < b_entry.change_ts:
+			# a --happened before-> b
 			return True
-		return False
+		return self._max_heap
+
+
+	cdef double _lowest_value(self):
+		if self._max_heap:
+			return numeric_limits[double].infinity()
+		else:
+			return -numeric_limits[double].infinity()
 
 	cdef int _siftdown(self, unsigned long long int startpos, unsigned long long int pos):
 

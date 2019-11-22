@@ -15,78 +15,78 @@ class EdgeCaseTest(unittest.TestCase):
 class InvariantTest(unittest.TestCase):
 	NUMBER_OF_ENTRIES = 10000
 
+	def setUp(self):
+		self.pq: AddressablePQ = AddressablePQ()
+
 	def test_add(self):
 		# Setup
 
-		pq: AddressablePQ = AddressablePQ()
-
 		# Test
 
-		self.assertTrue(pq._verify_invariants())
-		self.assertEqual(len(pq), 0)
+		self.assertTrue(self.pq._verify_invariants())
+		self.assertEqual(len(self.pq), 0)
 
 		for i in range(self.NUMBER_OF_ENTRIES):
 			val = random.random()
-			pq.add(str(i), val, None)
-			self.assertTrue(pq._verify_invariants())
-			self.assertEqual(len(pq), i + 1)
+			self.pq.add(str(i), val, None)
+			self.assertTrue(self.pq._verify_invariants())
+			self.assertEqual(len(self.pq), i + 1)
 
 	def test_pop(self):
 		# Setup
 
-		pq: AddressablePQ = AddressablePQ()
-
 		for i in range(self.NUMBER_OF_ENTRIES):
 			val = random.random()
-			pq.add(str(i), val, None)
+			self.pq.add(str(i), val, None)
 
 		# Test
 
-		self.assertTrue(pq._verify_invariants())
-		self.assertEqual(len(pq), self.NUMBER_OF_ENTRIES)
+		self.assertTrue(self.pq._verify_invariants())
+		self.assertEqual(len(self.pq), self.NUMBER_OF_ENTRIES)
 
 		for i in range(self.NUMBER_OF_ENTRIES):
-			_, _, _ = pq.pop()
-			self.assertTrue(pq._verify_invariants())
-			self.assertEqual(len(pq), self.NUMBER_OF_ENTRIES - i - 1)
+			_, _, _ = self.pq.pop()
+			self.assertTrue(self.pq._verify_invariants())
+			self.assertEqual(len(self.pq), self.NUMBER_OF_ENTRIES - i - 1)
 
 	def test_change_value(self):
 		# Setup
 
-		pq: AddressablePQ = AddressablePQ()
-
 		for i in range(self.NUMBER_OF_ENTRIES):
 			val = random.random()
-			pq.add(str(i), val, None)
+			self.pq.add(str(i), val, None)
 
 		# Test
 
-		self.assertTrue(pq._verify_invariants())
-		self.assertEqual(len(pq), self.NUMBER_OF_ENTRIES)
+		self.assertTrue(self.pq._verify_invariants())
+		self.assertEqual(len(self.pq), self.NUMBER_OF_ENTRIES)
 
 		for i in range(self.NUMBER_OF_ENTRIES):
 			val = random.random()
-			pq.change_value(str(i), val)
-			self.assertTrue(pq._verify_invariants())
+			self.pq.change_value(str(i), val)
+			self.assertTrue(self.pq._verify_invariants())
 
 	def test_delete(self):
 		# Setup
 
-		pq: AddressablePQ = AddressablePQ()
-
 		for i in range(self.NUMBER_OF_ENTRIES):
 			val = random.random()
-			pq.add(str(i), val, None)
+			self.pq.add(str(i), val, None)
 
 		# Test
 
-		self.assertTrue(pq._verify_invariants())
-		self.assertEqual(len(pq), self.NUMBER_OF_ENTRIES)
+		self.assertTrue(self.pq._verify_invariants())
+		self.assertEqual(len(self.pq), self.NUMBER_OF_ENTRIES)
 
 		for i in range(self.NUMBER_OF_ENTRIES):
-			del pq[str(i)]
-			self.assertTrue(pq._verify_invariants())
-			self.assertEqual(len(pq), self.NUMBER_OF_ENTRIES - i - 1)
+			del self.pq[str(i)]
+			self.assertTrue(self.pq._verify_invariants())
+			self.assertEqual(len(self.pq), self.NUMBER_OF_ENTRIES - i - 1)
+
+
+class MaxHeapInvariantTest(InvariantTest):
+	def setUp(self):
+		self.pq: AddressablePQ = AddressablePQ(max_heap=True)
 
 
 class HeapCompareTest(unittest.TestCase):
@@ -209,45 +209,51 @@ class HeapCompareTest(unittest.TestCase):
 
 
 class EndToEndTest(unittest.TestCase):
+	def setUp(self):
+		self.l: typing.List[float] = []
+		self.pq: AddressablePQ = AddressablePQ()
+		self._sort_l = lambda: self.l.sort()
+
 	def test_pop(self):
 		# Setup
 
-		l: typing.List[float] = []
-		pq: AddressablePQ = AddressablePQ()
-
 		for i in range(10000):
 			val = random.random()
-			pq.add(str(i), val, None)
-			l.append(val)
+			self.pq.add(str(i), val, None)
+			self.l.append(val)
 
-		l.sort()
+		self._sort_l()
 
 		# Test
 
-		for i, val in enumerate(addressable_pq_pop_all(pq)):
-			self.assertEqual(val, l[i])
+		for i, val in enumerate(addressable_pq_pop_all(self.pq)):
+			self.assertEqual(val, self.l[i])
 
 	def test_change_value(self):
 		# Setup
 
-		l: typing.List[float] = []
-		pq: AddressablePQ = AddressablePQ()
+		for i in range(10000):
+			val = random.random()
+			self.pq.add(str(i), val, None)
 
 		for i in range(10000):
 			val = random.random()
-			pq.add(str(i), val, None)
+			self.pq.change_value(str(i), val)
+			self.l.append(val)
 
-		for i in range(10000):
-			val = random.random()
-			pq.change_value(str(i), val)
-			l.append(val)
-
-		l.sort()
+		self._sort_l()
 
 		# Test
 
-		for i, val in enumerate(addressable_pq_pop_all(pq)):
-			self.assertEqual(val, l[i])
+		for i, val in enumerate(addressable_pq_pop_all(self.pq)):
+			self.assertEqual(val, self.l[i])
+
+
+class MaxHeapEndToEndTest(EndToEndTest):
+	def setUp(self):
+		self.l: typing.List[float] = []
+		self.pq: AddressablePQ = AddressablePQ(max_heap=True)
+		self._sort_l = lambda: self.l.sort(reverse=True)
 
 
 def list_pop_all(l: typing.List[float]) -> typing.Iterator[float]:
