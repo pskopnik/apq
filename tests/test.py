@@ -7,7 +7,7 @@ import heapq
 from apq import AddressablePQ
 
 
-class EdgeCaseTest(unittest.TestCase)
+class EdgeCaseTest(unittest.TestCase):
 	# Should raise exception when empty, ...
 	pass
 
@@ -92,8 +92,12 @@ class InvariantTest(unittest.TestCase):
 class HeapCompareTest(unittest.TestCase):
 	def test_incremental_push_small(self):
 		for n in itertools.chain.from_iterable(itertools.repeat(i, 1000) for i in range(10)):
+			# Setup
+
 			pq: AddressablePQ = AddressablePQ()
 			heap: typing.List[float] = []
+
+			# Test
 
 			for i in range(n):
 				val = random.random()
@@ -103,8 +107,12 @@ class HeapCompareTest(unittest.TestCase):
 
 	def test_incremental_push(self):
 		for n in range(1000):
+			# Setup
+
 			pq: AddressablePQ = AddressablePQ()
 			heap: typing.List[float] = []
+
+			# Test
 
 			for i in range(n):
 				val = random.random()
@@ -114,6 +122,8 @@ class HeapCompareTest(unittest.TestCase):
 
 	def test_incremental_pop_small(self):
 		for n in itertools.chain.from_iterable(itertools.repeat(i, 1000) for i in range(10)):
+			# Setup
+
 			pq: AddressablePQ = AddressablePQ()
 			heap: typing.List[float] = []
 
@@ -122,11 +132,16 @@ class HeapCompareTest(unittest.TestCase):
 				pq.add(str(i), val, None)
 				heapq.heappush(heap, val)
 
-			for apq_val, heap_val in zip(addressable_pq_pop_all(pq), heap_pop_all(heap)):
-				self.assertEqual(apq_val, heap_val)
+			# Test
 
-	def test_pop(self):
-		for n in range(10000):
+			for _ in range(n):
+				self.assertEqual(pq.pop()[0], heapq.heappop(heap))
+				self.assertEqual(pq._export(), heap)
+
+	def test_incremental_pop(self):
+		for n in range(1000):
+			# Setup
+
 			pq: AddressablePQ = AddressablePQ()
 			heap: typing.List[float] = []
 
@@ -135,10 +150,15 @@ class HeapCompareTest(unittest.TestCase):
 				pq.add(str(i), val, None)
 				heapq.heappush(heap, val)
 
-			for apq_val, heap_val in zip(addressable_pq_pop_all(pq), heap_pop_all(heap)):
-				self.assertEqual(apq_val, heap_val)
+			# Test
+
+			for _ in range(n):
+				self.assertEqual(pq.pop()[0], heapq.heappop(heap))
+				self.assertEqual(pq._export(), heap)
 
 	def test_incremental_change_value(self):
+		# Setup
+
 		pq: AddressablePQ = AddressablePQ()
 		heap: typing.List[typing.List[float]] = []
 		heap_lookup_dict: typing.Dict[str, typing.List[float]] = {}
@@ -150,6 +170,8 @@ class HeapCompareTest(unittest.TestCase):
 			heap_entry = [val]
 			heap_lookup_dict[key] = heap_entry
 			heapq.heappush(heap, heap_entry)
+
+		# Test
 
 		for i in range(1000):
 			val = random.random()
@@ -160,11 +182,13 @@ class HeapCompareTest(unittest.TestCase):
 			self.assertEqual(pq._export(), [e[0] for e in heap])
 
 	def test_change_value(self):
+		# Setup
+
 		pq: AddressablePQ = AddressablePQ()
 		heap: typing.List[typing.List[float]] = []
 		heap_lookup_dict: typing.Dict[str, typing.List[float]] = {}
 
-		for i in range(1000):
+		for i in range(10000):
 			val = random.random()
 			key = str(i)
 			pq.add(key, val, None)
@@ -172,20 +196,23 @@ class HeapCompareTest(unittest.TestCase):
 			heap_lookup_dict[key] = heap_entry
 			heapq.heappush(heap, heap_entry)
 
-		for i in range(1000):
+		for i in range(10000):
 			val = random.random()
 			key = str(i)
 			pq.change_value(key, val)
 			heap_lookup_dict[key][0] = val
 			heapq.heapify(heap)
 
+		# Test
+
 		self.assertEqual(pq._export(), [e[0] for e in heap])
 
 
 class EndToEndTest(unittest.TestCase):
 	def test_pop(self):
-		l: typing.List[float] = []
+		# Setup
 
+		l: typing.List[float] = []
 		pq: AddressablePQ = AddressablePQ()
 
 		for i in range(10000):
@@ -195,17 +222,20 @@ class EndToEndTest(unittest.TestCase):
 
 		l.sort()
 
+		# Test
+
 		for i, val in enumerate(addressable_pq_pop_all(pq)):
 			self.assertEqual(val, l[i])
 
 	def test_change_value(self):
+		# Setup
+
+		l: typing.List[float] = []
 		pq: AddressablePQ = AddressablePQ()
 
 		for i in range(10000):
 			val = random.random()
 			pq.add(str(i), val, None)
-
-		l: typing.List[float] = []
 
 		for i in range(10000):
 			val = random.random()
@@ -214,9 +244,14 @@ class EndToEndTest(unittest.TestCase):
 
 		l.sort()
 
+		# Test
+
 		for i, val in enumerate(addressable_pq_pop_all(pq)):
 			self.assertEqual(val, l[i])
 
+
+def list_pop_all(l: typing.List[float]) -> typing.Iterator[float]:
+	return iter(l)
 
 def heap_pop_all(heap: typing.List[float]) -> typing.Iterator[float]:
 	while True:
