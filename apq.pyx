@@ -25,7 +25,7 @@ cdef class Item:
 	@property
 	def key(self):
 		if not self._cached_key_set:
-			self._cached_key = self._e.key.decode()
+			self._cached_key = self._e.key.decode('utf8')
 
 		return self._cached_key
 
@@ -123,7 +123,7 @@ cdef class AddressablePQ:
 
 		self._lookup_map.erase(key)
 
-		return key, value, data
+		return key.decode('utf8'), value, data
 
 	def _export(self):
 		l = []
