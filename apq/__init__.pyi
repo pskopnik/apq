@@ -31,7 +31,7 @@ class AddressablePQ(Generic[DataType]):
 	def __getitem__(self, identifier: Union[str, Item[DataType]]) -> Item[DataType]:
 		...
 
-	def __delitem__(self, identifier: Union[str, Item[DataType]]):
+	def __delitem__(self, identifier: Union[str, Item[DataType]]) -> None:
 		...
 
 	def add(self, key: str, value: float, data: DataType) -> Item[DataType]:
