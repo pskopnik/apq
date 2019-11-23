@@ -15,6 +15,9 @@ setup(
 	author = "Paul Skopnik",
 	author_email = "paul@skopnik.me",
 	description = "An addressable priority queue",
+	packages = ["apq"],
+	package_data = {"apq": ["*.pyi", "py.typed"]},
+	zip_safe = False,
 	ext_modules = cythonize(
 		extensions,
 		# annotate = True,

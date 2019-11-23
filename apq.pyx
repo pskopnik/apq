@@ -123,7 +123,7 @@ cdef class AddressablePQ:
 
 		self._lookup_map.erase(key)
 
-		return value, key, data
+		return key, value, data
 
 	def _export(self):
 		l = []

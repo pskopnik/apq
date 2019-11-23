@@ -15,10 +15,10 @@ class EdgeCaseTest(unittest.TestCase):
 class InvariantTest(unittest.TestCase):
 	NUMBER_OF_ENTRIES = 10000
 
-	def setUp(self):
+	def setUp(self) -> None:
 		self.pq: AddressablePQ = AddressablePQ()
 
-	def test_add(self):
+	def test_add(self) -> None:
 		# Setup
 
 		# Test
@@ -32,7 +32,7 @@ class InvariantTest(unittest.TestCase):
 			self.assertTrue(self.pq._verify_invariants())
 			self.assertEqual(len(self.pq), i + 1)
 
-	def test_pop(self):
+	def test_pop(self) -> None:
 		# Setup
 
 		for i in range(self.NUMBER_OF_ENTRIES):
@@ -49,7 +49,7 @@ class InvariantTest(unittest.TestCase):
 			self.assertTrue(self.pq._verify_invariants())
 			self.assertEqual(len(self.pq), self.NUMBER_OF_ENTRIES - i - 1)
 
-	def test_change_value(self):
+	def test_change_value(self) -> None:
 		# Setup
 
 		for i in range(self.NUMBER_OF_ENTRIES):
@@ -66,7 +66,7 @@ class InvariantTest(unittest.TestCase):
 			self.pq.change_value(str(i), val)
 			self.assertTrue(self.pq._verify_invariants())
 
-	def test_delete(self):
+	def test_delete(self) -> None:
 		# Setup
 
 		for i in range(self.NUMBER_OF_ENTRIES):
@@ -85,12 +85,12 @@ class InvariantTest(unittest.TestCase):
 
 
 class MaxHeapInvariantTest(InvariantTest):
-	def setUp(self):
+	def setUp(self) -> None:
 		self.pq: AddressablePQ = AddressablePQ(max_heap=True)
 
 
 class HeapCompareTest(unittest.TestCase):
-	def test_incremental_push_small(self):
+	def test_incremental_push_small(self) -> None:
 		for n in itertools.chain.from_iterable(itertools.repeat(i, 1000) for i in range(10)):
 			# Setup
 
@@ -105,7 +105,7 @@ class HeapCompareTest(unittest.TestCase):
 				heapq.heappush(heap, val)
 				self.assertEqual(pq._export(), heap)
 
-	def test_incremental_push(self):
+	def test_incremental_push(self) -> None:
 		for n in range(1000):
 			# Setup
 
@@ -120,7 +120,7 @@ class HeapCompareTest(unittest.TestCase):
 				heapq.heappush(heap, val)
 				self.assertEqual(pq._export(), heap)
 
-	def test_incremental_pop_small(self):
+	def test_incremental_pop_small(self) -> None:
 		for n in itertools.chain.from_iterable(itertools.repeat(i, 1000) for i in range(10)):
 			# Setup
 
@@ -135,10 +135,10 @@ class HeapCompareTest(unittest.TestCase):
 			# Test
 
 			for _ in range(n):
-				self.assertEqual(pq.pop()[0], heapq.heappop(heap))
+				self.assertEqual(pq.pop()[1], heapq.heappop(heap))
 				self.assertEqual(pq._export(), heap)
 
-	def test_incremental_pop(self):
+	def test_incremental_pop(self) -> None:
 		for n in range(1000):
 			# Setup
 
@@ -153,10 +153,10 @@ class HeapCompareTest(unittest.TestCase):
 			# Test
 
 			for _ in range(n):
-				self.assertEqual(pq.pop()[0], heapq.heappop(heap))
+				self.assertEqual(pq.pop()[1], heapq.heappop(heap))
 				self.assertEqual(pq._export(), heap)
 
-	def test_incremental_change_value(self):
+	def test_incremental_change_value(self) -> None:
 		# Setup
 
 		pq: AddressablePQ = AddressablePQ()
@@ -181,7 +181,7 @@ class HeapCompareTest(unittest.TestCase):
 			heapq.heapify(heap)
 			self.assertEqual(pq._export(), [e[0] for e in heap])
 
-	def test_change_value(self):
+	def test_change_value(self) -> None:
 		# Setup
 
 		pq: AddressablePQ = AddressablePQ()
@@ -209,12 +209,12 @@ class HeapCompareTest(unittest.TestCase):
 
 
 class EndToEndTest(unittest.TestCase):
-	def setUp(self):
+	def setUp(self) -> None:
 		self.l: typing.List[float] = []
 		self.pq: AddressablePQ = AddressablePQ()
 		self._sort_l = lambda: self.l.sort()
 
-	def test_pop(self):
+	def test_pop(self) -> None:
 		# Setup
 
 		for i in range(10000):
@@ -229,7 +229,7 @@ class EndToEndTest(unittest.TestCase):
 		for i, val in enumerate(addressable_pq_pop_all(self.pq)):
 			self.assertEqual(val, self.l[i])
 
-	def test_change_value(self):
+	def test_change_value(self) -> None:
 		# Setup
 
 		for i in range(10000):
@@ -250,7 +250,7 @@ class EndToEndTest(unittest.TestCase):
 
 
 class MaxHeapEndToEndTest(EndToEndTest):
-	def setUp(self):
+	def setUp(self) -> None:
 		self.l: typing.List[float] = []
 		self.pq: AddressablePQ = AddressablePQ(max_heap=True)
 		self._sort_l = lambda: self.l.sort(reverse=True)
@@ -269,7 +269,7 @@ def heap_pop_all(heap: typing.List[float]) -> typing.Iterator[float]:
 def addressable_pq_pop_all(pq: AddressablePQ) -> typing.Iterator[float]:
 	while True:
 		try:
-			val, _, _ = pq.pop()
+			_, val, _ = pq.pop()
 			yield val
 		except IndexError:
 			break

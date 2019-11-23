@@ -6,6 +6,7 @@ verify_ssl = true
 [dev-packages]
 cython = "*"
 wheel = "*"
+mypy = "*"
 
 [packages]
 apq = {editable = true,path = "."}
