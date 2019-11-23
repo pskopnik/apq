@@ -24,7 +24,6 @@ setup(
 		# gdb_debug = True,
 		compiler_directives = {
 			'embedsignature': True,
-			'language_level': '3',
 		}
 	),
 )

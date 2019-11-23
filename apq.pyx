@@ -1,5 +1,5 @@
 # distutils: language = c++
-# distutils: language_level = 3
+# cython: language_level = 3
 
 from libcpp.string cimport string
 from libcpp.vector cimport vector
