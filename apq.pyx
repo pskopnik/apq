@@ -105,7 +105,7 @@ cdef class KeyedPQ:
 		try:
 			e = self._lookup(string_key)
 			self._change_value(e, value, preincrement(self._ts))
-		except:
+		except KeyError:
 			return self.add(key, value, data)
 
 	def peek(self):
