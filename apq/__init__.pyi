@@ -18,7 +18,7 @@ class Item(Generic[DataType]):
 		...
 
 
-class AddressablePQ(Generic[DataType]):
+class KeyedPQ(Generic[DataType]):
 	def __init__(self, max_heap: bool=False) -> None:
 		...
 

@@ -44,7 +44,7 @@ cdef class Item:
 		return i
 
 
-cdef class AddressablePQ:
+cdef class KeyedPQ:
 	cdef vector[Entry*] _heap
 	cdef unordered_map[string, Entry] _lookup_map
 	cdef unsigned long long int _ts

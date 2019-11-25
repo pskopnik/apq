@@ -4,7 +4,7 @@ import random
 import typing
 import heapq
 
-from apq import AddressablePQ
+from apq import KeyedPQ
 
 
 class EdgeCaseTest(unittest.TestCase):
@@ -16,7 +16,7 @@ class InvariantTest(unittest.TestCase):
 	NUMBER_OF_ENTRIES = 10000
 
 	def setUp(self) -> None:
-		self.pq: AddressablePQ[None] = AddressablePQ()
+		self.pq: KeyedPQ[None] = KeyedPQ()
 
 	def test_add(self) -> None:
 		# Setup
@@ -86,7 +86,7 @@ class InvariantTest(unittest.TestCase):
 
 class MaxHeapInvariantTest(InvariantTest):
 	def setUp(self) -> None:
-		self.pq: AddressablePQ[None] = AddressablePQ(max_heap=True)
+		self.pq: KeyedPQ[None] = KeyedPQ(max_heap=True)
 
 
 class HeapCompareTest(unittest.TestCase):
@@ -94,7 +94,7 @@ class HeapCompareTest(unittest.TestCase):
 		for n in itertools.chain.from_iterable(itertools.repeat(i, 1000) for i in range(10)):
 			# Setup
 
-			pq: AddressablePQ[None] = AddressablePQ()
+			pq: KeyedPQ[None] = KeyedPQ()
 			heap: typing.List[float] = []
 
 			# Test
@@ -109,7 +109,7 @@ class HeapCompareTest(unittest.TestCase):
 		for n in range(1000):
 			# Setup
 
-			pq: AddressablePQ[None] = AddressablePQ()
+			pq: KeyedPQ[None] = KeyedPQ()
 			heap: typing.List[float] = []
 
 			# Test
@@ -124,7 +124,7 @@ class HeapCompareTest(unittest.TestCase):
 		for n in itertools.chain.from_iterable(itertools.repeat(i, 1000) for i in range(10)):
 			# Setup
 
-			pq: AddressablePQ[None] = AddressablePQ()
+			pq: KeyedPQ[None] = KeyedPQ()
 			heap: typing.List[float] = []
 
 			for i in range(n):
@@ -142,7 +142,7 @@ class HeapCompareTest(unittest.TestCase):
 		for n in range(1000):
 			# Setup
 
-			pq: AddressablePQ[None] = AddressablePQ()
+			pq: KeyedPQ[None] = KeyedPQ()
 			heap: typing.List[float] = []
 
 			for i in range(n):
@@ -159,7 +159,7 @@ class HeapCompareTest(unittest.TestCase):
 	def test_incremental_change_value(self) -> None:
 		# Setup
 
-		pq: AddressablePQ[None] = AddressablePQ()
+		pq: KeyedPQ[None] = KeyedPQ()
 		heap: typing.List[typing.List[float]] = []
 		heap_lookup_dict: typing.Dict[str, typing.List[float]] = {}
 
@@ -184,7 +184,7 @@ class HeapCompareTest(unittest.TestCase):
 	def test_change_value(self) -> None:
 		# Setup
 
-		pq: AddressablePQ[None] = AddressablePQ()
+		pq: KeyedPQ[None] = KeyedPQ()
 		heap: typing.List[typing.List[float]] = []
 		heap_lookup_dict: typing.Dict[str, typing.List[float]] = {}
 
@@ -211,7 +211,7 @@ class HeapCompareTest(unittest.TestCase):
 class EndToEndTest(unittest.TestCase):
 	def setUp(self) -> None:
 		self.l: typing.List[float] = []
-		self.pq: AddressablePQ[None] = AddressablePQ()
+		self.pq: KeyedPQ[None] = KeyedPQ()
 		self._sort_l: typing.Callable[[], None] = lambda: self.l.sort()
 
 	def test_pop(self) -> None:
@@ -252,7 +252,7 @@ class EndToEndTest(unittest.TestCase):
 class MaxHeapEndToEndTest(EndToEndTest):
 	def setUp(self) -> None:
 		self.l: typing.List[float] = []
-		self.pq: AddressablePQ[None] = AddressablePQ(max_heap=True)
+		self.pq: KeyedPQ[None] = KeyedPQ(max_heap=True)
 		self._sort_l: typing.Callable[[], None] = lambda: self.l.sort(reverse=True)
 
 
@@ -266,7 +266,7 @@ def heap_pop_all(heap: typing.List[float]) -> typing.Iterator[float]:
 		except IndexError:
 			break
 
-def addressable_pq_pop_all(pq: 'AddressablePQ[None]') -> typing.Iterator[float]:
+def addressable_pq_pop_all(pq: 'KeyedPQ[None]') -> typing.Iterator[float]:
 	while True:
 		try:
 			_, val, _ = pq.pop()

@@ -10,7 +10,7 @@ KeyTypeInner = TypeVar('KeyTypeInner')
 DataTypeInner = TypeVar('DataTypeInner')
 
 
-class AddressablePQ(Generic[KeyType, DataType]):
+class PyKeyedPQB(Generic[KeyType, DataType]):
 	"""Basic implementation of an addressable priority queue.
 
 	Changing the value of an entry requires a linear search within the data
@@ -29,8 +29,8 @@ class AddressablePQ(Generic[KeyType, DataType]):
 
 
 	class Item(Generic[KeyTypeInner, DataTypeInner]):
-		def __init__(self, entry: 'AddressablePQ._Entry[KeyTypeInner, DataTypeInner]') -> None:
-			self._entry: AddressablePQ._Entry[KeyTypeInner, DataTypeInner] = entry
+		def __init__(self, entry: 'PyKeyedPQB._Entry[KeyTypeInner, DataTypeInner]') -> None:
+			self._entry: PyKeyedPQB._Entry[KeyTypeInner, DataTypeInner] = entry
 
 		@property
 		def key(self) -> KeyTypeInner:
@@ -45,12 +45,12 @@ class AddressablePQ(Generic[KeyType, DataType]):
 			return self._entry.data
 
 	def __init__(self) -> None:
-		self._heap: List[AddressablePQ._Entry[KeyType, DataType]] = []
+		self._heap: List[PyKeyedPQB._Entry[KeyType, DataType]] = []
 		self._change_index = 1
-		self._lookup_dict: Dict[KeyType, AddressablePQ._Entry[KeyType, DataType]] = {}
+		self._lookup_dict: Dict[KeyType, PyKeyedPQB._Entry[KeyType, DataType]] = {}
 
-	def _entry_from_identifier(self, identifier: Union[KeyType, 'AddressablePQ.Item[KeyType, DataType]']) -> 'AddressablePQ._Entry[KeyType, DataType]':
-		if isinstance(identifier, AddressablePQ.Item):
+	def _entry_from_identifier(self, identifier: Union[KeyType, 'PyKeyedPQB.Item[KeyType, DataType]']) -> 'PyKeyedPQB._Entry[KeyType, DataType]':
+		if isinstance(identifier, PyKeyedPQB.Item):
 			return identifier._entry
 		else:
 			return self._lookup_dict[identifier]
@@ -61,11 +61,11 @@ class AddressablePQ(Generic[KeyType, DataType]):
 	def __contains__(self, key: KeyType) -> bool:
 		return key in self._lookup_dict
 
-	def __getitem__(self, key: KeyType) -> 'AddressablePQ.Item[KeyType, DataType]':
+	def __getitem__(self, key: KeyType) -> 'PyKeyedPQB.Item[KeyType, DataType]':
 		entry = self._lookup_dict[key]
-		return AddressablePQ.Item(entry)
+		return PyKeyedPQB.Item(entry)
 
-	def __delitem__(self, identifier: Union[KeyType, 'AddressablePQ.Item[KeyType, DataType]']) -> None:
+	def __delitem__(self, identifier: Union[KeyType, 'PyKeyedPQB.Item[KeyType, DataType]']) -> None:
 		entry = self._entry_from_identifier(identifier)
 		entry.value, entry.change_index = -math.inf, 0
 		# impl A
@@ -78,18 +78,18 @@ class AddressablePQ(Generic[KeyType, DataType]):
 		heapq.heappop(self._heap)
 		del self._lookup_dict[entry.key]
 
-	def add(self, key: KeyType, value: float, data: DataType) -> 'AddressablePQ.Item[KeyType, DataType]':
-		entry = AddressablePQ._Entry(value, self._change_index, key, data)
+	def add(self, key: KeyType, value: float, data: DataType) -> 'PyKeyedPQB.Item[KeyType, DataType]':
+		entry = PyKeyedPQB._Entry(value, self._change_index, key, data)
 		self._change_index += 1
 		heapq.heappush(self._heap, entry)
 		self._lookup_dict[key] = entry
-		return AddressablePQ.Item(entry)
+		return PyKeyedPQB.Item(entry)
 
-	def change_value(self, identifier: Union[KeyType, 'AddressablePQ.Item[KeyType, DataType]'], value: float) -> None:
+	def change_value(self, identifier: Union[KeyType, 'PyKeyedPQB.Item[KeyType, DataType]'], value: float) -> None:
 		entry = self._entry_from_identifier(identifier)
 		self._change_value(entry, value)
 
-	def _change_value(self, entry: 'AddressablePQ._Entry[KeyType, DataType]', value: float) -> None:
+	def _change_value(self, entry: 'PyKeyedPQB._Entry[KeyType, DataType]', value: float) -> None:
 		entry.value, entry.change_index = value, self._change_index
 		self._change_index += 1
 		# impl A
@@ -99,17 +99,17 @@ class AddressablePQ(Generic[KeyType, DataType]):
 		ind = self._heap.index(entry)
 		_siftup(self._heap, ind)
 
-	def add_or_change(self, key: KeyType, value: float, data: DataType) -> 'AddressablePQ.Item[KeyType, DataType]':
+	def add_or_change(self, key: KeyType, value: float, data: DataType) -> 'PyKeyedPQB.Item[KeyType, DataType]':
 		try:
 			entry = self._lookup_dict[key]
 			self._change_value(entry, value)
-			return AddressablePQ.Item(entry)
+			return PyKeyedPQB.Item(entry)
 		except KeyError:
 			return self.add(key, value, data)
 
-	def peek(self) -> 'AddressablePQ.Item[KeyType, DataType]':
+	def peek(self) -> 'PyKeyedPQB.Item[KeyType, DataType]':
 		entry = self._heap[0]
-		return AddressablePQ.Item(entry)
+		return PyKeyedPQB.Item(entry)
 
 	def pop(self) -> Tuple[KeyType, float, DataType]:
 		entry = heapq.heappop(self._heap)
