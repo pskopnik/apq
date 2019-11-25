@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Any, Dict, Generic, List, Tuple, TypeVar, Union
+from typing import Any, cast, Dict, Generic, List, Tuple, TypeVar, Union
 import heapq
 import math
 
@@ -11,14 +11,6 @@ DataTypeInner = TypeVar('DataTypeInner')
 
 
 class PyKeyedPQB(Generic[KeyType, DataType]):
-	"""Basic implementation of an addressable priority queue.
-
-	Changing the value of an entry requires a linear search within the data
-	structure. This makes processing hits very expensive. The index of each
-	_Entry must be tracked within the _Entry to alleviate this.
-	A simple workaround could be to perform a heap-aware search instead of a
-	linear one.
-	"""
 
 	@dataclass(order=True)
 	class _Entry(Generic[KeyTypeInner, DataTypeInner]):
@@ -138,4 +130,4 @@ def _siftup(heap: List[Any], pos: int) -> None:
 	# The leaf at pos is empty now.  Put newitem there, and bubble it up
 	# to its final resting place (by sifting its parents down).
 	heap[pos] = newitem
-	heapq._siftdown(heap, 0, pos)
+	cast(Any, heapq)._siftdown(heap, 0, pos)
