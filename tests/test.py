@@ -4,12 +4,80 @@ import random
 import typing
 import heapq
 
-from apq import KeyedPQ
+from apq import KeyedPQ, Item
 
 
-class EdgeCaseTest(unittest.TestCase):
-	# Should raise exception when empty, ...
-	pass
+class KeyTest(unittest.TestCase):
+	def setUp(self) -> None:
+		self.pq: KeyedPQ[None] = KeyedPQ()
+
+	def test_existing_str_key(self) -> None:
+		self.pq.add('a', 0.0, None)
+
+		self.assertTrue('a' in self.pq)
+		self.assertEqual(self.pq['a'].key, 'a')
+
+	def test_unknown_str_key(self) -> None:
+		self.assertFalse('b' in self.pq)
+		with self.assertRaises(KeyError):
+			item = self.pq['a']
+
+	def test_removed_str_key(self) -> None:
+		self.pq.add('a', 0.0, None)
+		del self.pq['a']
+
+		self.assertFalse('a' in self.pq)
+		with self.assertRaises(KeyError):
+			item = self.pq['a']
+
+		self.pq.add('b', 0.0, None)
+		self.pq.pop()
+
+		self.assertFalse('b' in self.pq)
+		with self.assertRaises(KeyError):
+			item = self.pq['b']
+
+	def test_existing_item_key(self) -> None:
+		item = self.pq.add('a', 0.0, None)
+
+		self.assertTrue(item in self.pq)
+		self.assertEqual(self.pq[item].key, 'a')
+
+	def test_unknown_item_key(self) -> None:
+		item: Item[None] = Item()
+
+		self.assertFalse(item in self.pq)
+		with self.assertRaises(KeyError):
+			item = self.pq[item]
+
+	def test_others_item_key(self) -> None:
+		pq2: KeyedPQ[None] = KeyedPQ()
+		item2 = pq2.add('a', 0.0, None)
+
+		self.assertFalse(item2 in self.pq)
+		with self.assertRaises(KeyError):
+			item = self.pq[item2]
+
+		self.pq.add('a', 0.0, None)
+
+		self.assertFalse(item2 in self.pq)
+		with self.assertRaises(KeyError):
+			item = self.pq[item2]
+
+	def test_removed_item_key(self) -> None:
+		item_a = self.pq.add('a', 0.0, None)
+		del self.pq['a']
+
+		self.assertFalse(item_a in self.pq)
+		with self.assertRaises(KeyError):
+			item = self.pq[item_a]
+
+		item_b = self.pq.add('b', 0.0, None)
+		self.pq.pop()
+
+		self.assertFalse(item_b in self.pq)
+		with self.assertRaises(KeyError):
+			item = self.pq[item_b]
 
 
 class InvariantTest(unittest.TestCase):

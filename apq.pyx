@@ -274,8 +274,7 @@ cdef class KeyedPQ:
 
 		return self._siftdown(0, pos)
 
-	#cdef Entry* _lookup(self, string key) except +KeyError: # Cython bug
-	cdef Entry* _lookup(self, string key) except +:
+	cdef Entry* _lookup(self, string key) except +KeyError:
 		return &self._lookup_map.at(key)
 
 	cdef Entry* _entry_from_identifier(self, object identifier) except *:
@@ -284,7 +283,7 @@ cdef class KeyedPQ:
 			if (<Item>identifier)._e is NULL:
 				raise KeyError("Passed identifier (of type Item) does not reference a PQ entry")
 			e = (<Item>identifier)._e
-			if self._heap.at(e.index) != e:
+			if e.index >= self._heap.size() or self._heap.at(e.index) != e:
 				raise KeyError("Passed identifier (of type Item) is not known to the PQ")
 			return e
 
