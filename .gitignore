@@ -1,0 +1,9 @@
+.mypy_cache/*
+apq.cpp
+apq.html
+
+build/*
+apq.egg-info
+apq.*.so
+
+dist/*
