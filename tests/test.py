@@ -79,6 +79,12 @@ class KeyTest(unittest.TestCase):
 		with self.assertRaises(KeyError):
 			item = self.pq[item_b]
 
+	def test_add_duplicate_str_key(self) -> None:
+		self.pq.add('a', 0.0, None)
+
+		with self.assertRaises(KeyError):
+			self.pq.add('a', 3.0, None)
+
 
 class InvariantTest(unittest.TestCase):
 	NUMBER_OF_ENTRIES = 10000

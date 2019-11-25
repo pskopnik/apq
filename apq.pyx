@@ -76,10 +76,13 @@ cdef class KeyedPQ:
 		self._lookup_map.erase(e.key)
 
 	def add(self, object key, double value, object data):
-		# TODO what to do when the key already exists?
 		cdef Entry e
-		e.index = self._heap.size()
 		e.key = stringify(key)
+
+		if self._lookup_map.count(e.key) > 0:
+			raise KeyError("Duplicate key: key already exists in PQ")
+
+		e.index = self._heap.size()
 		e.value = value
 		e.change_ts = preincrement(self._ts)
 		e.data = data
