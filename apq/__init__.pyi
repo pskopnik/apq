@@ -43,7 +43,7 @@ class AddressablePQ(Generic[DataType]):
 	def add_or_change(self, key: str, value: float, data: DataType) -> Item[DataType]:
 		...
 
-	def peak(self) -> Item[DataType]:
+	def peek(self) -> Item[DataType]:
 		...
 
 	def pop(self) -> Tuple[str, float, DataType]:

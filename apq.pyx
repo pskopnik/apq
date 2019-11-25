@@ -105,7 +105,7 @@ cdef class AddressablePQ:
 		except:
 			return self.add(key, value, data)
 
-	def peak(self):
+	def peek(self):
 		if self._heap.size() == 0:
 			raise IndexError("PQ is empty")
 

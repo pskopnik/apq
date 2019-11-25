@@ -107,7 +107,7 @@ class AddressablePQ(Generic[KeyType, DataType]):
 		except KeyError:
 			return self.add(key, value, data)
 
-	def peak(self) -> 'AddressablePQ.Item[KeyType, DataType]':
+	def peek(self) -> 'AddressablePQ.Item[KeyType, DataType]':
 		entry = self._heap[0]
 		return AddressablePQ.Item(entry)
 
