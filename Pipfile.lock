@@ -87,6 +87,21 @@
             ],
             "version": "==0.4.3"
         },
+        "pqdict": {
+            "hashes": [
+                "sha256:2e365b84b33f81bc4ed7029fcde3a1360deca74989ddacda68e7f907f01f0d85",
+                "sha256:f9e50eefc7e2ea9f7623f8db14ccac91b6d264aa509f0341c99e582d2d02b413"
+            ],
+            "index": "pypi",
+            "version": "==1.0.0"
+        },
+        "six": {
+            "hashes": [
+                "sha256:1f1b7d42e254082a9db6279deae68afb421ceba6158efa6131de7b3003ee93fd",
+                "sha256:30f610279e8b2578cab6db20741130331735c781b56053c59c4076da27f06b66"
+            ],
+            "version": "==1.13.0"
+        },
         "typed-ast": {
             "hashes": [
                 "sha256:1170afa46a3799e18b4c977777ce137bb53c7485379d9706af8a59f2ea1aa161",
