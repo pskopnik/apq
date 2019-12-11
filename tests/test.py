@@ -1,8 +1,9 @@
+import heapq
 import itertools
-import unittest
+import math
 import random
 import typing
-import heapq
+import unittest
 
 from apq import KeyedPQ, Item
 
@@ -84,6 +85,62 @@ class KeyTest(unittest.TestCase):
 
 		with self.assertRaises(KeyError):
 			self.pq.add('a', 3.0, None)
+
+
+class ValueTest(unittest.TestCase):
+	def setUp(self) -> None:
+		self.pq: KeyedPQ[None] = KeyedPQ()
+
+	def test_change_value(self) -> None:
+		item_added = self.pq.add('a', 0.0, None)
+
+		item_changed = self.pq.change_value('a', 5.0)
+
+		self.assertEqual(item_added.value, item_changed.value)
+		self.assertEqual(item_changed.value, 5.0)
+		self.assertEqual(len(self.pq), 1)
+		self.assertTrue(item_added in self.pq)
+
+	def test_add_or_change_value_change(self) -> None:
+		item_added = self.pq.add('a', 0.0, None)
+
+		item_changed = self.pq.add_or_change_value('a', 5.0, None)
+
+		self.assertEqual(item_added.value, item_changed.value)
+		self.assertEqual(item_changed.value, 5.0)
+		self.assertEqual(len(self.pq), 1)
+		self.assertTrue(item_added in self.pq)
+
+	def test_add_or_change_value_add(self) -> None:
+		item_added = self.pq.add('a', 0.0, None)
+
+		item_changed = self.pq.add_or_change_value('b', 5.0, None)
+
+		self.assertEqual(item_changed.key, 'b')
+		self.assertEqual(item_changed.value, 5.0)
+		self.assertEqual(len(self.pq), 2)
+		self.assertTrue(item_added in self.pq)
+		self.assertTrue(item_changed in self.pq)
+
+	def test_add_infinity(self) -> None:
+		self.pq.add('a', math.inf, None)
+		self.pq.add('b', 3000.0, None)
+
+		key_first, _, _ = self.pq.pop()
+		self.assertEqual(key_first, 'b')
+		key_second, _, _ = self.pq.pop()
+		self.assertEqual(key_second, 'a')
+
+	def test_change_to_infinity(self) -> None:
+		self.pq.add('a', 3.0, None)
+		self.pq.add('b', 3000.0, None)
+
+		self.pq.change_value('a', math.inf)
+
+		key_first, _, _ = self.pq.pop()
+		self.assertEqual(key_first, 'b')
+		key_second, _, _ = self.pq.pop()
+		self.assertEqual(key_second, 'a')
 
 
 class InvariantTest(unittest.TestCase):

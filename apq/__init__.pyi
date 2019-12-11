@@ -37,10 +37,10 @@ class KeyedPQ(Generic[DataType]):
 	def add(self, key: str, value: float, data: DataType) -> Item[DataType]:
 		...
 
-	def change_value(self, identifier: Union[str, Item[DataType]], value: float) -> None:
+	def change_value(self, identifier: Union[str, Item[DataType]], value: float) -> Item[DataType]:
 		...
 
-	def add_or_change(self, key: str, value: float, data: DataType) -> Item[DataType]:
+	def add_or_change_value(self, key: str, value: float, data: DataType) -> Item[DataType]:
 		...
 
 	def peek(self) -> Item[DataType]:

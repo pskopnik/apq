@@ -98,6 +98,7 @@ cdef class KeyedPQ:
 	def change_value(self, object identifier, double value):
 		cdef Entry* e = self._entry_from_identifier(identifier)
 		self._change_value(e, value, preincrement(self._ts))
+		return Item.from_pointer(e)
 
 	def add_or_change_value(self, object key, double value, object data):
 		cdef string string_key = stringify(key)
@@ -105,6 +106,7 @@ cdef class KeyedPQ:
 		try:
 			e = self._lookup(string_key)
 			self._change_value(e, value, preincrement(self._ts))
+			return Item.from_pointer(e)
 		except KeyError:
 			return self.add(key, value, data)
 
