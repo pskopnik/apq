@@ -1,5 +1,5 @@
 test:
-	pipenv run cython -a --cplus -Wextra apq.pyx
+	pipenv run cython -a --cplus -Werror -Wextra apq.pyx
 	pipenv install -e .
 	pipenv run mypy --strict tests
 	pipenv run python -m unittest tests/test.py
