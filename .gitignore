@@ -3,6 +3,7 @@ apq.cpp
 apq.html
 
 build/*
+cython_debug/*
 apq.egg-info
 apq.*.so
 

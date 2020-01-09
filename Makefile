@@ -13,7 +13,7 @@ build-dist:
 
 clean:
 	rm -f apq.cpp apq.html
-	rm -rf build apq.egg-info
+	rm -rf build apq.egg-info cython_debug
 	rm -f apq.*.so
 
 .PHONY: test bench-basic build-dist clean
