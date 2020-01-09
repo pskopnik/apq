@@ -1,10 +1,11 @@
 #ifndef BIN_HEAP_H
 #define BIN_HEAP_H
 
-#include <algorithm>
 #include <cstddef>
-#include <vector>
+#include <algorithm>
 #include <functional>
+#include <iterator>
+#include <vector>
 
 #include <cassert>
 
@@ -13,7 +14,10 @@ template<
 >
 class DefaultSetIndex {
 public:
-	void operator()(T& el, std::size_t index) const {}
+	void operator()(T& el, std::size_t index) const {
+		(void)el;
+		(void)index;
+	}
 };
 
 template<
@@ -59,6 +63,9 @@ protected:
 		assert(startInd <= holeInd);
 		assert(container.size() <= holeInd * 2 + 1 || !compare(container[holeInd * 2 + 1], value));
 		assert(container.size() <= holeInd * 2 + 2 || !compare(container[holeInd * 2 + 2], value));
+		assert(isHeap(container.cbegin(), container.cbegin() + startInd, container.cbegin() + holeInd));
+		assert(container.size() <= holeInd * 2 + 1 || isHeap(container.cbegin(), container.cbegin() + holeInd * 2 + 1, container.cend()));
+		assert(container.size() <= holeInd * 2 + 2 || isHeap(container.cbegin(), container.cbegin() + holeInd * 2 + 2, container.cend()));
 
 		while (holeInd > startInd) {
 			const size_type parentPos = (holeInd - 1) / 2;
@@ -86,12 +93,14 @@ protected:
 		 * leaf), then using siftUp to move value to the right place.
 		 */
 
+		assert(holeInd >= 0);
+		assert(holeInd < container.size());
+		assert(container.size() <= holeInd * 2 + 1 || isHeap(container.cbegin(), container.cbegin() + holeInd * 2 + 1, container.cend()));
+		assert(container.size() <= holeInd * 2 + 2 || isHeap(container.cbegin(), container.cbegin() + holeInd * 2 + 2, container.cend()));
+
 		const size_type len = container.size();
 		const size_type limit = (len - 1) / 2; // first index that does not have two children
 		const size_type startInd = holeInd;
-
-		assert(holeInd >= 0);
-		assert(holeInd < len);
 
 		// while the hole has two children...
 		while (holeInd < limit) {
@@ -148,19 +157,34 @@ protected:
 			siftUp(ind, 0, std::move(value));
 	}
 
-	bool verify() const {
-		for (auto i = container.begin(); i != container.end(); ++i) {
-			const auto ind = i - container.begin();
+	bool isHeap(
+		typename container_type::const_iterator beginIt,
+		typename container_type::const_iterator startIt,
+		typename container_type::const_iterator endIt
+	) const {
+		const auto len = std::distance(beginIt, endIt);
+
+		for (auto it = startIt; it != endIt; ++it) {
+			const auto ind = std::distance(beginIt, it);
 
 			const auto leftChildInd = 2 * ind + 1;
 			const auto rightChildInd = leftChildInd + 1;
-			if (leftChildInd < container.size() and compare(container[leftChildInd], *i))
+			if (leftChildInd < len && compare(*(beginIt + leftChildInd), *it))
 					return false;
-			if (rightChildInd < container.size() and compare(container[rightChildInd], *i))
+			if (rightChildInd < len && compare(*(beginIt + rightChildInd), *it))
 					return false;
 		}
 		return true;
 	}
+
+	template<
+		class T1,
+		class Container1,
+		class Compare1,
+		class SetIndex1
+	>
+	friend class BinHeapVerifier;
+
 public:
 	BinHeap() : BinHeap(Compare(), SetIndex(), Container()) {}
 	BinHeap(const Compare& comp, const SetIndex& setInd, const Container& cont) : container(cont), compare(comp), setIndex(setInd) {
@@ -292,5 +316,25 @@ template<
 	class SetIndex = DefaultSetIndex<typename Container::value_type>
 >
 using MaxBinHeap = BinHeap<T, Container, MaxHeapCompare<T>, SetIndex>;
+
+template<
+	class T,
+	class Container = std::vector<T>,
+	class Compare = std::less<typename Container::value_type>,
+	class SetIndex = DefaultSetIndex<typename Container::value_type>
+>
+class BinHeapVerifier {
+public:
+	using bin_heap_type = BinHeap<T, Container, Compare, SetIndex>;
+
+private:
+	bin_heap_type& heap;
+
+public:
+	BinHeapVerifier(bin_heap_type& heap) : heap(heap) {}
+	bool verify() const {
+		return heap.isHeap(heap.container.cbegin(), heap.container.cbegin(), heap.container.cend());
+	}
+};
 
 #endif
