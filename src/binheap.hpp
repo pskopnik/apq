@@ -6,6 +6,8 @@
 #include <vector>
 #include <functional>
 
+#include <cassert>
+
 template<
 	class T = void
 >
@@ -43,13 +45,20 @@ protected:
 	void siftUp(size_type holeInd, size_type startInd, value_type&& value) {
 		/*
 		 * container is a heap at all indices >= startInd, except possibly
-		 * for holeInd. startInd < holeInd or no work is done. value is
-		 * presumed at holeInd and must be less than any of the holeInd
+		 * for holeInd. startInd <= holeInd or no work is done. value is
+		 * presumed at holeInd and must be less or equal to any of the holeInd
 		 * children (simple case: leaf).
 		 *
 		 * Restore the heap invariant by moving value to the right position by
 		 * moving up the hole until parent is <= value.
 		 */
+
+		assert(holeInd >= 0);
+		assert(startInd >= 0);
+		assert(holeInd < container.size());
+		assert(startInd <= holeInd);
+		assert(container.size() <= holeInd * 2 + 1 || !compare(container[holeInd * 2 + 1], value));
+		assert(container.size() <= holeInd * 2 + 2 || !compare(container[holeInd * 2 + 2], value));
 
 		while (holeInd > startInd) {
 			const size_type parentPos = (holeInd - 1) / 2;
@@ -80,6 +89,9 @@ protected:
 		const size_type len = container.size();
 		const size_type limit = (len - 1) / 2; // first index that does not have two children
 		const size_type startInd = holeInd;
+
+		assert(holeInd >= 0);
+		assert(holeInd < len);
 
 		// while the hole has two children...
 		while (holeInd < limit) {
@@ -117,7 +129,6 @@ protected:
 			value_type value = std::move(container[i]);
 			siftDown(i, std::move(value));
 		}
-
 	}
 
 	void fixPushed() {
@@ -126,10 +137,11 @@ protected:
 	}
 
 	void fixValue(size_type ind, value_type&& value) {
+		const size_type len = container.size();
 		if ((
-				2 * ind + 1 < container.size() && compare(container[2 * ind + 1], value) // left child < value?
+				2 * ind + 1 < len && compare(container[2 * ind + 1], value) // left child < value?
 			) || (
-				2 * ind + 2 < container.size() && compare(container[2 * ind + 2], value) // right child < value?
+				2 * ind + 2 < len && compare(container[2 * ind + 2], value) // right child < value?
 		))
 			siftDown(ind, std::move(value));
 		else
@@ -197,7 +209,8 @@ public:
 	void remove(size_type ind) {
 		value_type value = std::move(container.back());
 		container.pop_back();
-		fixValue(ind, std::move(value));
+		if (ind < container.size())
+			fixValue(ind, std::move(value));
 	}
 	void remove(iterator it) {
 		remove(it - begin());
@@ -208,8 +221,9 @@ public:
 
 	void pop() {
 		value_type value = std::move(container.back());
-		siftDown(0, std::move(value));
 		container.pop_back();
+		if (0 < container.size())
+			siftDown(0, std::move(value));
 	}
 
 	bool empty() const {
