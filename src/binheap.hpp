@@ -249,4 +249,34 @@ public:
 	}
 };
 
+template<class T>
+class MinHeapCompare {
+public:
+	bool operator()(const T& lhs, const T& rhs) const {
+		return lhs.minHeapCompare(rhs);
+	}
+};
+
+template<class T>
+class MaxHeapCompare {
+public:
+	bool operator()(const T& lhs, const T& rhs) const {
+		return lhs.maxHeapCompare(rhs);
+	}
+};
+
+template<
+	class T,
+	class Container = std::vector<T>,
+	class SetIndex = DefaultSetIndex<typename Container::value_type>
+>
+using MinBinHeap = BinHeap<T, Container, MinHeapCompare<T>, SetIndex>;
+
+template<
+	class T,
+	class Container = std::vector<T>,
+	class SetIndex = DefaultSetIndex<typename Container::value_type>
+>
+using MaxBinHeap = BinHeap<T, Container, MaxHeapCompare<T>, SetIndex>;
+
 #endif
