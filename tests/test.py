@@ -215,9 +215,9 @@ class InvariantTest(unittest.TestCase):
 			self.assertEqual(len(self.pq), self.NUMBER_OF_ENTRIES - i - 1)
 
 
-class MaxHeapInvariantTest(InvariantTest):
-	def setUp(self) -> None:
-		self.pq: KeyedPQ[None] = KeyedPQ(max_heap=True)
+# class MaxHeapInvariantTest(InvariantTest):
+# 	def setUp(self) -> None:
+# 		self.pq: KeyedPQ[None] = KeyedPQ(max_heap=True)
 
 
 class HeapCompareTest(unittest.TestCase):
@@ -380,11 +380,11 @@ class EndToEndTest(unittest.TestCase):
 			self.assertEqual(val, self.l[i])
 
 
-class MaxHeapEndToEndTest(EndToEndTest):
-	def setUp(self) -> None:
-		self.l: typing.List[float] = []
-		self.pq: KeyedPQ[None] = KeyedPQ(max_heap=True)
-		self._sort_l: typing.Callable[[], None] = lambda: self.l.sort(reverse=True)
+# class MaxHeapEndToEndTest(EndToEndTest):
+# 	def setUp(self) -> None:
+# 		self.l: typing.List[float] = []
+# 		self.pq: KeyedPQ[None] = KeyedPQ(max_heap=True)
+# 		self._sort_l: typing.Callable[[], None] = lambda: self.l.sort(reverse=True)
 
 
 def list_pop_all(l: typing.List[float]) -> typing.Iterator[float]:
