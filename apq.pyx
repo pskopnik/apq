@@ -39,6 +39,7 @@ cdef extern from "src/binheap.hpp" nogil:
 		bint empty()
 		size_type size()
 		value_type& top()
+		T& operator[](size_type)
 		iterator begin()
 		iterator end()
 		const_iterator const_begin "begin"()
@@ -84,37 +85,49 @@ cdef extern from "src/binheap.hpp" nogil:
 		ctypedef vector[value_type].iterator iterator
 		ctypedef vector[value_type].const_iterator const_iterator
 
+	cdef cppclass StandardEntry[T, V=*, ChangeTSTracking=*, SetIndex=*]:
+		ctypedef double value_type
+		ctypedef T data_type
+		ctypedef size_t ts_type
+		ctypedef StandardEntry entry_type
+
+		StandardEntry()
+		StandardEntry(value_type, data_type&, ts_type)
+
+		void set(value_type, data_type&, ts_type)
+		value_type getValue()
+		void setValue(value_type)
+		void setValue(value_type, ts_type)
+		ts_type getChangeTS()
+		void setChangeTS(ts_type)
+		data_type& getData()
+		void setData(data_type&)
+		void setData(data_type&, ts_type)
+		bint minHeapCompare(entry_type&)
+		bint maxHeapCompare(entry_type&)
 
 cdef extern from "src/_apq_helpers.cpp" nogil:
-	cdef cppclass APQEntry[T]:
+	cdef cppclass APQPayload[T]:
 		size_t index
 		string key
-		double value
-		size_t change_ts
 		T data
 
-		APQEntry()
-		APQEntry(size_t, string, double, size_t, T)
 
-		bint minHeapCompare(APQEntry[T]&)
-		bint maxHeapCompare(APQEntry[T]&)
-
-	cdef cppclass PointerWrapper[T]:
-		PointerWrapper(T*)
-		PointerWrapper(T&)
-		T* get()
-		T& operator*()
-
-# TODO: figure out how properly do this: templates cannot be instantiated with "object"
 cdef cppclass PyObjectWrapper:
+	# PyObjectWrapper wraps an owned reference to a Python object.
+	#
+	# Reference counting operations are performed on construction, assigment
+	# and destruction. This makes PyObjectWrapper useful for storing Python
+	# objects in C++ containers.
 	object obj
 
 
-ctypedef APQEntry[PyObjectWrapper] Entry
-ctypedef PointerWrapper[APQEntry[PyObjectWrapper]] WrappedEntry
+ctypedef APQPayload[PyObjectWrapper] Entry
+ctypedef StandardEntry[Entry*] HeapEntry
 
 
 cdef class Item:
+	cdef MinBinHeap[HeapEntry]* _heap
 	cdef Entry* _e
 	cdef unicode _cached_key
 	cdef bint _cached_key_set
@@ -128,21 +141,22 @@ cdef class Item:
 
 	@property
 	def value(self):
-		return self._e.value
+		return dereference(self._heap)[self._e.index].getValue()
 
 	@property
 	def data(self):
 		return self._e.data.obj
 
 	@staticmethod
-	cdef from_pointer(Entry* e):
+	cdef from_pointer(MinBinHeap[HeapEntry]* heap, Entry* e):
 		i = Item()
+		i._heap = heap
 		i._e = e
 		return i
 
 
 cdef class KeyedPQ:
-	cdef MinBinHeap[WrappedEntry] _heap
+	cdef MinBinHeap[HeapEntry] _heap
 	cdef unordered_map[string, Entry] _lookup_map
 	cdef unsigned long long int _ts
 
@@ -163,7 +177,7 @@ cdef class KeyedPQ:
 
 	def __getitem__(self, object identifier):
 		cdef Entry* e = self._entry_from_identifier(identifier)
-		return Item.from_pointer(e)
+		return Item.from_pointer(&self._heap, e)
 
 	def __delitem__(self, object identifier):
 		cdef Entry* e = self._entry_from_identifier(identifier)
@@ -177,33 +191,33 @@ cdef class KeyedPQ:
 		if self._lookup_map.count(e.key) > 0:
 			raise KeyError("Duplicate key: key already exists in PQ")
 
-		e.value = value
-		e.change_ts = preincrement(self._ts)
 		e.data.obj = data
 
 		self._lookup_map[e.key] = e
 		cdef Entry* e_pointer = &self._lookup_map[e.key]
 
-		self._heap.push(WrappedEntry(e_pointer))
+		self._heap.push(HeapEntry(
+			value,
+			e_pointer,
+			preincrement(self._ts),
+		))
 
-		return Item.from_pointer(e_pointer)
+		return Item.from_pointer(&self._heap, e_pointer)
 
 	def change_value(self, object identifier, double value):
 		cdef Entry* e = self._entry_from_identifier(identifier)
-		e.value = value
-		e.change_ts = preincrement(self._ts)
+		self._heap[e.index].setValue(value, preincrement(self._ts))
 		self._heap.fix(e.index)
-		return Item.from_pointer(e)
+		return Item.from_pointer(&self._heap, e)
 
 	def add_or_change_value(self, object key, double value, object data):
 		cdef string string_key = stringify(key)
 		cdef Entry* e
 		try:
 			e = self._lookup(string_key)
-			e.value = value
-			e.change_ts = preincrement(self._ts)
+			self._heap[e.index].setValue(value, preincrement(self._ts))
 			self._heap.fix(e.index)
-			return Item.from_pointer(e)
+			return Item.from_pointer(&self._heap, e)
 		except KeyError:
 			return self.add(key, value, data)
 
@@ -211,15 +225,16 @@ cdef class KeyedPQ:
 		if self._heap.size() == 0:
 			raise IndexError("PQ is empty")
 
-		return Item.from_pointer(self._heap.top().get())
+		return Item.from_pointer(&self._heap, self._heap.top().getData())
 
 	def pop(self):
 		if self._heap.size() == 0:
 			raise IndexError("PQ is empty")
 
-		cdef Entry* e = self._heap.top().get()
+		cdef HeapEntry heapEntry = self._heap.top()
+		cdef Entry* e = heapEntry.getData()
 
-		cdef double value = e.value
+		cdef double value = heapEntry.getValue()
 		cdef string key = e.key
 		cdef object data = e.data.obj
 
@@ -237,7 +252,7 @@ cdef class KeyedPQ:
 			if (<Item>identifier)._e is NULL:
 				raise KeyError("Passed identifier (of type Item) does not reference a PQ entry")
 			e = (<Item>identifier)._e
-			if e.index >= self._heap.size() or dereference(self._heap.begin() + e.index).get() != e:
+			if e.index >= self._heap.size() or self._heap[e.index].getData() != e:
 				raise KeyError("Passed identifier (of type Item) is not known to the PQ")
 			return e
 
@@ -247,13 +262,13 @@ cdef class KeyedPQ:
 	def _export(self):
 		l = []
 
-		cdef MinBinHeap[WrappedEntry].iterator begin_it, end_it, it
+		cdef MinBinHeap[HeapEntry].iterator begin_it, end_it, it
 
 		begin_it = self._heap.begin()
 		end_it = self._heap.end()
 		it = begin_it
 		while it != end_it:
-			l.append(dereference(it).get().value)
+			l.append(dereference(it).getValue())
 			preincrement(it)
 
 		return l
@@ -264,14 +279,14 @@ cdef class KeyedPQ:
 			return False
 
 		cdef Entry* e
-		cdef MinBinHeap[WrappedEntry].size_type i, left_child_ind, right_child_ind
-		cdef MinBinHeap[WrappedEntry].iterator begin_it, end_it, it
+		cdef MinBinHeap[HeapEntry].size_type i, left_child_ind, right_child_ind
+		cdef MinBinHeap[HeapEntry].iterator begin_it, end_it, it
 
 		begin_it = self._heap.begin()
 		end_it = self._heap.end()
 		it = begin_it
 		while it != end_it:
-			e = dereference(it).get()
+			e = dereference(it).getData()
 			i = it - begin_it
 			if e.index != i:
 				# wrong index is stored in the entry
@@ -283,10 +298,10 @@ cdef class KeyedPQ:
 
 			left_child_ind = 2 * i + 1
 			right_child_ind = left_child_ind + 1
-			if left_child_ind < self._heap.size() and dereference(begin_it + left_child_ind).get().minHeapCompare(dereference(e)):
+			if left_child_ind < self._heap.size() and self._heap[left_child_ind].minHeapCompare(dereference(it)):
 					# left child is less than parent
 					return False
-			if right_child_ind < self._heap.size() and dereference(begin_it + right_child_ind).get().minHeapCompare(dereference(e)):
+			if right_child_ind < self._heap.size() and self._heap[right_child_ind].minHeapCompare(dereference(it)):
 					# right child is less than parent
 					return False
 

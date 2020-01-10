@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <functional>
 #include <iterator>
+#include <type_traits>
 #include <vector>
 
 #include <cassert>
@@ -265,6 +266,13 @@ public:
 		return container.front();
 	}
 
+	reference operator[](size_type ind) {
+		return container[ind];
+	}
+	const_reference operator[](size_type ind) const {
+		return container[ind];
+	}
+
 	iterator begin() {
 		return container.begin();
 	}
@@ -284,6 +292,26 @@ public:
 	}
 	const_iterator cend() const {
 		return container.cend();
+	}
+};
+
+template<
+	class T,
+	class Container = std::vector<T>,
+	class Compare = std::less<typename Container::value_type>,
+	class SetIndex = DefaultSetIndex<typename Container::value_type>
+>
+class BinHeapVerifier {
+public:
+	using bin_heap_type = BinHeap<T, Container, Compare, SetIndex>;
+
+private:
+	bin_heap_type& heap;
+
+public:
+	BinHeapVerifier(bin_heap_type& heap) : heap(heap) {}
+	bool verify() const {
+		return heap.isHeap(heap.container.cbegin(), heap.container.cbegin(), heap.container.cend());
 	}
 };
 
@@ -319,21 +347,139 @@ using MaxBinHeap = BinHeap<T, Container, MaxHeapCompare<T>, SetIndex>;
 
 template<
 	class T,
-	class Container = std::vector<T>,
-	class Compare = std::less<typename Container::value_type>,
-	class SetIndex = DefaultSetIndex<typename Container::value_type>
+	class V = double,
+	bool ChangeTSTracking = true,
+	class SetIndex = DefaultSetIndex<T>
+> class StandardEntry {
+protected:
+	using _full_ts_type = std::size_t;
+	using _empty_ts_type = class{};
+
+public:
+	using value_type = V;
+	using data_type = T;
+	using ts_type = typename std::conditional<ChangeTSTracking, _full_ts_type, _empty_ts_type>::type;
+	using entry_type = StandardEntry<T, V, ChangeTSTracking, SetIndex>;
+
+protected:
+	SetIndex _setIndex;
+
+	V value;
+	ts_type changeTS;
+	T data;
+
+public:
+	StandardEntry() {}
+	StandardEntry(V value, const T& data) : value(value), data(data) {}
+	StandardEntry(V value, T&& data) : value(value), data(data) {}
+	StandardEntry(V value, const T& data, ts_type changeTS) : value(value), changeTS(changeTS), data(data) {}
+	StandardEntry(V value, T&& data, ts_type changeTS) : value(value), changeTS(changeTS), data(data) {}
+
+	void setIndex(std::size_t index) {
+		_setIndex(data, index);
+	}
+
+	void set(V val, const T& d) {
+		value = val;
+		data = d;
+	}
+	void set(V val, T&& d) {
+		value = val;
+		data = std::move(d);
+	}
+	void set(V val, const T& d, ts_type ts) {
+		value = val;
+		data = d;
+		changeTS = ts;
+	}
+	void set(V val, T&& d, ts_type ts) {
+		value = val;
+		data = std::move(d);
+		changeTS = ts;
+	}
+
+	V getValue() const {
+		return value;
+	}
+	void setValue(V val) {
+		value = val;
+	}
+	void setValue(V val, ts_type ts) {
+		value = val;
+		changeTS = ts;
+	}
+
+	ts_type getChangeTS() const {
+		return changeTS;
+	}
+	void setChangeTS(ts_type ts) {
+		changeTS = ts;
+	}
+
+	T& getData() {
+		return data;
+	}
+	void setData(const T& d) {
+		data = d;
+	}
+	void setData(T&& d) {
+		data = std::move(d);
+	}
+	void setData(const T& d, ts_type ts) {
+		data = d;
+		changeTS = ts;
+	}
+	void setData(T&& d, ts_type ts) {
+		data = std::move(d);
+		changeTS = ts;
+	}
+
+	bool minHeapCompare(const entry_type &other) const {
+		return _minHeapCompare(other, ts_type());
+	}
+
+	bool maxHeapCompare(const entry_type &other) const {
+		return _maxHeapCompare(other, ts_type());
+	}
+
+protected:
+	bool _minHeapCompare(const entry_type &other, _full_ts_type) const {
+		if (value < other.value)
+			return true;
+		else if (value == other.value)
+			return changeTS < other.changeTS;
+		else
+			return false;
+	}
+
+	bool _minHeapCompare(const entry_type &other, _empty_ts_type) const {
+		return value < other.value;
+	}
+
+	bool _maxHeapCompare(const entry_type &other, _full_ts_type) const {
+		if (value > other.value)
+			return true;
+		else if (value == other.value)
+			return changeTS < other.changeTS;
+		else
+			return false;
+	}
+
+	bool _maxHeapCompare(const entry_type &other, _empty_ts_type) const {
+		return value > other.value;
+	}
+};
+
+template<
+	class T,
+	class V,
+	bool ChangeTSTracking,
+	class SetIndex
 >
-class BinHeapVerifier {
+class DefaultSetIndex<StandardEntry<T, V, ChangeTSTracking, SetIndex>> {
 public:
-	using bin_heap_type = BinHeap<T, Container, Compare, SetIndex>;
-
-private:
-	bin_heap_type& heap;
-
-public:
-	BinHeapVerifier(bin_heap_type& heap) : heap(heap) {}
-	bool verify() const {
-		return heap.isHeap(heap.container.cbegin(), heap.container.cbegin(), heap.container.cend());
+	void operator()(StandardEntry<T, V, ChangeTSTracking, SetIndex>& e, std::size_t index) const {
+		e.setIndex(index);
 	}
 };
 
