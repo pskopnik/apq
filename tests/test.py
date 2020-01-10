@@ -86,6 +86,33 @@ class KeyTest(unittest.TestCase):
 		with self.assertRaises(KeyError):
 			self.pq.add('a', 3.0, None)
 
+	def test_invalid_key_type(self) -> None:
+		self.pq.add('a', 0.0, None)
+
+		with self.assertRaises(TypeError):
+			self.pq[typing.cast(typing.Any, None)]
+
+		with self.assertRaises(TypeError):
+			self.pq[typing.cast(typing.Any, 4)]
+
+		with self.assertRaises(TypeError):
+			self.pq[typing.cast(typing.Any, 4.5)]
+
+		class A(object):
+			pass
+
+		with self.assertRaises(TypeError):
+			self.pq[typing.cast(typing.Any, A())]
+
+		with self.assertRaises(TypeError):
+			self.pq[typing.cast(typing.Any, (4,))]
+
+		with self.assertRaises(TypeError):
+			self.pq[typing.cast(typing.Any, lambda x: x)]
+
+		with self.assertRaises(TypeError):
+			self.pq[typing.cast(typing.Any, [4])]
+
 
 class ValueTest(unittest.TestCase):
 	def setUp(self) -> None:

@@ -310,8 +310,8 @@ cdef class KeyedPQ:
 		return True
 
 
-cdef string stringify(object s):
+cdef string stringify(object s) except *:
 	if isinstance(s, unicode):
 		return <string>(<unicode>s).encode('utf8')
 
-	return <string>(s)
+	return <string?>(s)
