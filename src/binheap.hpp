@@ -28,6 +28,44 @@ template<
 	class Compare = std::less<typename Container::value_type>,
 	class SetIndex = DefaultSetIndex<typename Container::value_type>
 >
+class BinHeap;
+
+template<class T>
+class MinHeapCompare {
+public:
+	bool operator()(const T& lhs, const T& rhs) const {
+		return lhs.minHeapCompare(rhs);
+	}
+};
+
+template<class T>
+class MaxHeapCompare {
+public:
+	bool operator()(const T& lhs, const T& rhs) const {
+		return lhs.maxHeapCompare(rhs);
+	}
+};
+
+template<
+	class T,
+	class Container = std::vector<T>,
+	class SetIndex = DefaultSetIndex<typename Container::value_type>
+>
+using MinBinHeap = BinHeap<T, Container, MinHeapCompare<T>, SetIndex>;
+
+template<
+	class T,
+	class Container = std::vector<T>,
+	class SetIndex = DefaultSetIndex<typename Container::value_type>
+>
+using MaxBinHeap = BinHeap<T, Container, MaxHeapCompare<T>, SetIndex>;
+
+template<
+	class T,
+	class Container, // default value in forward declaration above
+	class Compare, // default value in forward declaration above
+	class SetIndex // default value in forward declaration above
+>
 class BinHeap {
 public:
 	using container_type = Container;
@@ -42,6 +80,141 @@ public:
 
 	using iterator = typename Container::iterator;
 	using const_iterator = typename Container::const_iterator;
+
+	template<bool Const>
+	class _OrderedIterator {
+	public:
+		using iterator_category = std::forward_iterator_tag;
+		using value_type = value_type;
+		using difference_type = std::ptrdiff_t;
+		using reference = typename std::conditional_t<Const, value_type const &, value_type &>;
+		using pointer = typename std::conditional_t<Const, value_type const *, value_type *>;
+
+		using value_heap_type = BinHeap<T, container_type, value_compare, value_set_index>;
+		using referenced_heap_type = typename std::conditional_t<Const, value_heap_type const, value_heap_type>;
+
+	protected:
+		class Entry {
+		protected:
+			const value_heap_type* valueHeap;
+			size_type ind;
+		public:
+			bool minHeapCompare(const Entry& other) const {
+				return valueHeap->compare((*valueHeap)[ind], (*valueHeap)[other.ind]);
+			}
+
+			size_type getInd() const {
+				return ind;
+			}
+
+			Entry(const value_heap_type* valueHeap, size_type ind) : valueHeap(valueHeap), ind(ind) {}
+		};
+
+		MinBinHeap<Entry> entryHeap;
+		referenced_heap_type* valueHeap;
+	public:
+		/*
+		 * Definitions satisfying the LegacyIterator requirement.
+		 *
+		 * https://en.cppreference.com/w/cpp/named_req/Iterator
+		 */
+
+		reference operator*() const { return (*valueHeap)[entryHeap.top().getInd()]; }
+
+		_OrderedIterator<Const>& operator++() {
+			size_type ind = entryHeap.top().getInd();
+			const size_type leftChildInd = 2 * ind + 1;
+			const size_type rightChildInd = 2 * ind + 2;
+
+			entryHeap.pop();
+
+			if (leftChildInd < valueHeap->size())
+				entryHeap.emplace(valueHeap, leftChildInd);
+			if (rightChildInd < valueHeap->size())
+				entryHeap.emplace(valueHeap, rightChildInd);
+
+			return *this;
+		}
+
+		/*
+		 * Definitions satisfying the EqualityComparable requirement.
+		 *
+		 * https://en.cppreference.com/w/cpp/named_req/EqualityComparable
+		 */
+
+		friend bool operator==(const _OrderedIterator<Const>& lhs, const _OrderedIterator<Const>& rhs) {
+			if (lhs.valueHeap != rhs.valueHeap)
+				return false;
+
+			if (lhs.entryHeap.size() == 0 || rhs.entryHeap.size() == 0)
+				return lhs.entryHeap.size() == 0 && rhs.entryHeap.size() == 0;
+
+			return lhs.entryHeap.top().getInd() == rhs.entryHeap.top().getInd();
+		}
+
+		/*
+		 * Further definitions satisfying the LegacyInputIterator requirement.
+		 *
+		 * https://en.cppreference.com/w/cpp/named_req/InputIterator
+		 */
+
+		pointer operator->() const { return &(**this); }
+
+		_OrderedIterator<Const> operator++(int) {
+			_OrderedIterator<Const> tmpIt(*this);
+			++(*this);
+			return tmpIt;
+		}
+
+		friend bool operator!=(const _OrderedIterator<Const>& lhs, const _OrderedIterator<Const>& rhs) {
+			return !(lhs == rhs);
+		}
+
+		/*
+		 * Further definitions satisfying the LegacyForwardIterator requirement.
+		 *
+		 * https://en.cppreference.com/w/cpp/named_req/ForwardIterator
+		 */
+
+		_OrderedIterator() {}
+
+		_OrderedIterator(referenced_heap_type* valueHeap) : valueHeap(valueHeap) {}
+		_OrderedIterator(referenced_heap_type* valueHeap, int) : valueHeap(valueHeap) {
+			if (valueHeap->size() > 0)
+				entryHeap.emplace(valueHeap, 0);
+		}
+
+		/**
+		 * Conversion operator, converts non-const into const iterator.
+		 */
+		operator _OrderedIterator<true>() const {
+			_OrderedIterator<true> constIt(valueHeap);
+			constIt.entryHeap = entryHeap;
+			return constIt;
+		}
+	};
+
+	using ordered_iterator = _OrderedIterator<false>;
+	using const_ordered_iterator = _OrderedIterator<true>;
+
+	template <bool Const>
+	class _OrderedIterable {
+		using iterator_type = std::conditional_t<Const, ordered_iterator, const_ordered_iterator>;
+		using value_heap_type = BinHeap<T, container_type, value_compare, value_set_index>;
+		using referenced_heap_type = typename std::conditional_t<Const, value_heap_type const, value_heap_type>;
+		referenced_heap_type valueHeap;
+
+	public:
+		_OrderedIterable(referenced_heap_type valueHeap) : valueHeap(valueHeap) {}
+
+		iterator_type begin() const { return iterator_type(&valueHeap, 0); }
+		iterator_type end() const { return iterator_type(&valueHeap); }
+		iterator_type cbegin() const { return iterator_type(&valueHeap, 0); }
+		iterator_type cend() const { return iterator_type(&valueHeap); }
+	};
+
+	using ordered_iterable = _OrderedIterable<false>;
+	using const_ordered_iterable  = _OrderedIterable<true>;
 
 protected:
 	Container container;
@@ -294,6 +467,9 @@ public:
 	const_iterator cend() const {
 		return container.cend();
 	}
+
+	ordered_iterable orderedIterable() { return ordered_iterable(*this); }
+	const_ordered_iterable orderedIterable() const { return const_ordered_iterable(*this); }
 };
 
 template<
@@ -315,36 +491,6 @@ public:
 		return heap.isHeap(heap.container.cbegin(), heap.container.cbegin(), heap.container.cend());
 	}
 };
-
-template<class T>
-class MinHeapCompare {
-public:
-	bool operator()(const T& lhs, const T& rhs) const {
-		return lhs.minHeapCompare(rhs);
-	}
-};
-
-template<class T>
-class MaxHeapCompare {
-public:
-	bool operator()(const T& lhs, const T& rhs) const {
-		return lhs.maxHeapCompare(rhs);
-	}
-};
-
-template<
-	class T,
-	class Container = std::vector<T>,
-	class SetIndex = DefaultSetIndex<typename Container::value_type>
->
-using MinBinHeap = BinHeap<T, Container, MinHeapCompare<T>, SetIndex>;
-
-template<
-	class T,
-	class Container = std::vector<T>,
-	class SetIndex = DefaultSetIndex<typename Container::value_type>
->
-using MaxBinHeap = BinHeap<T, Container, MaxHeapCompare<T>, SetIndex>;
 
 template<
 	class T,
@@ -632,14 +778,14 @@ public:
 
 	// template<class WrappedHeap>
 	// AnyBinHeap& operator=(WrappedHeap&& h) {
-	//    heapPtr = std::make_unique<WrappedHeap>(std::forward<WrappedHeap>(h));
-	//    return *this;
+	// 	heapPtr = std::make_unique<WrappedHeap>(std::forward<WrappedHeap>(h));
+	// 	return *this;
 	// }
 
 	template<class PureHeap>
 	AnyBinHeap& operator=(PureHeap&& h) {
-	   heapPtr = std::make_unique<BinHeapForwarder<T, typename PureHeap::container_type, typename PureHeap::value_compare, typename PureHeap::value_set_index>>(std::forward<PureHeap>(h));
-	   return *this;
+		heapPtr = std::make_unique<BinHeapForwarder<T, typename PureHeap::container_type, typename PureHeap::value_compare, typename PureHeap::value_set_index>>(std::forward<PureHeap>(h));
+		return *this;
 	}
 
 	void push(const value_type& value) { heapPtr->push(value); }
