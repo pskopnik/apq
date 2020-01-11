@@ -47,6 +47,23 @@ cdef extern from "src/binheap.hpp" nogil:
 		const_iterator cbegin()
 		const_iterator cend()
 
+	cdef cppclass AnyBinHeap[T](BinHeap[T]):
+		ctypedef T value_type
+
+		# note adapted from vector.pxd:
+		# these should really be container_type.size_type, ...
+		# but cython doesn't support deferred access on template arguments
+
+		ctypedef size_t size_type
+		ctypedef ptrdiff_t difference_type
+
+		ctypedef vector[value_type].iterator iterator
+		ctypedef vector[value_type].const_iterator const_iterator
+
+		AnyBinHeap()
+		AnyBinHeap(BinHeap[T])
+		AnyBinHeap& operator=(BinHeap[T])
+
 	cdef cppclass MinHeapCompare[T]:
 		pass
 
@@ -69,6 +86,8 @@ cdef extern from "src/binheap.hpp" nogil:
 		ctypedef vector[value_type].iterator iterator
 		ctypedef vector[value_type].const_iterator const_iterator
 
+		MinBinHeap()
+
 	cdef cppclass MaxBinHeap[T, Container=*, SetIndex=*](BinHeap[T, Container, MaxHeapCompare[T], SetIndex]):
 		ctypedef T value_type
 		ctypedef Container container_type
@@ -84,6 +103,8 @@ cdef extern from "src/binheap.hpp" nogil:
 
 		ctypedef vector[value_type].iterator iterator
 		ctypedef vector[value_type].const_iterator const_iterator
+
+		MaxBinHeap()
 
 	cdef cppclass StandardEntry[T, V=*, ChangeTSTracking=*, SetIndex=*]:
 		ctypedef double value_type
@@ -127,7 +148,7 @@ ctypedef StandardEntry[Entry*] HeapEntry
 
 
 cdef class Item:
-	cdef MinBinHeap[HeapEntry]* _heap
+	cdef AnyBinHeap[HeapEntry]* _heap
 	cdef Entry* _e
 	cdef unicode _cached_key
 	cdef bint _cached_key_set
@@ -148,7 +169,7 @@ cdef class Item:
 		return self._e.data.obj
 
 	@staticmethod
-	cdef from_pointer(MinBinHeap[HeapEntry]* heap, Entry* e):
+	cdef from_pointer(AnyBinHeap[HeapEntry]* heap, Entry* e):
 		i = Item()
 		i._heap = heap
 		i._e = e
@@ -156,13 +177,17 @@ cdef class Item:
 
 
 cdef class KeyedPQ:
-	cdef MinBinHeap[HeapEntry] _heap
+	cdef AnyBinHeap[HeapEntry] _heap
 	cdef unordered_map[string, Entry] _lookup_map
 	cdef unsigned long long int _ts
+	cdef bint _max_heap
 
 	def __cinit__(self, bint max_heap=False):
+		self._max_heap = max_heap
 		if max_heap:
-			raise NotImplementedError("KeyedPQ only supports min_heap")
+			self._heap = MaxBinHeap[HeapEntry]()
+		else:
+			self._heap = MinBinHeap[HeapEntry]()
 
 	def __len__(self):
 		return self._heap.size()
@@ -262,7 +287,7 @@ cdef class KeyedPQ:
 	def _export(self):
 		l = []
 
-		cdef MinBinHeap[HeapEntry].iterator begin_it, end_it, it
+		cdef AnyBinHeap[HeapEntry].iterator begin_it, end_it, it
 
 		begin_it = self._heap.begin()
 		end_it = self._heap.end()
@@ -279,8 +304,8 @@ cdef class KeyedPQ:
 			return False
 
 		cdef Entry* e
-		cdef MinBinHeap[HeapEntry].size_type i, left_child_ind, right_child_ind
-		cdef MinBinHeap[HeapEntry].iterator begin_it, end_it, it
+		cdef AnyBinHeap[HeapEntry].size_type i, left_child_ind, right_child_ind
+		cdef AnyBinHeap[HeapEntry].iterator begin_it, end_it, it
 
 		begin_it = self._heap.begin()
 		end_it = self._heap.end()
@@ -298,16 +323,22 @@ cdef class KeyedPQ:
 
 			left_child_ind = 2 * i + 1
 			right_child_ind = left_child_ind + 1
-			if left_child_ind < self._heap.size() and self._heap[left_child_ind].minHeapCompare(dereference(it)):
+			if left_child_ind < self._heap.size() and self._compare(self._heap[left_child_ind], dereference(it)):
 					# left child is less than parent
 					return False
-			if right_child_ind < self._heap.size() and self._heap[right_child_ind].minHeapCompare(dereference(it)):
+			if right_child_ind < self._heap.size() and self._compare(self._heap[left_child_ind], dereference(it)):
 					# right child is less than parent
 					return False
 
 			preincrement(it)
 
 		return True
+
+	cdef bint _compare(self, HeapEntry& lhs, HeapEntry& rhs):
+		if self._max_heap:
+			return lhs.maxHeapCompare(rhs)
+		else:
+			return lhs.minHeapCompare(rhs)
 
 
 cdef string stringify(object s) except *:
