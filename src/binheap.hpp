@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <functional>
 #include <iterator>
+#include <memory>
 #include <type_traits>
 #include <vector>
 
@@ -481,6 +482,200 @@ public:
 	void operator()(StandardEntry<T, V, ChangeTSTracking, SetIndex>& e, std::size_t index) const {
 		e.setIndex(index);
 	}
+};
+
+template<class T>
+class BinHeapInterface {
+public:
+	// TODO this helper definition avoids having to define abstract iterators.
+	// However, only std::vector<T> is possible as the BinHeap container.
+	using container_type = typename std::vector<T>;
+
+	using value_type = typename container_type::value_type;
+	using size_type = typename container_type::size_type;
+	using difference_type = typename container_type::difference_type;
+	using reference = typename container_type::reference;
+	using const_reference = typename container_type::const_reference;
+
+	using iterator = typename container_type::iterator;
+	using const_iterator = typename container_type::const_iterator;
+
+	virtual ~BinHeapInterface() {};
+
+	virtual void push(const value_type& value) = 0;
+	virtual void push(value_type&& value) = 0;
+
+	// template<class... Args>
+	// virtual void emplace(Args&&... args) = 0;
+
+	virtual void fix(size_type ind) = 0;
+	virtual void fix(iterator it) = 0;
+	virtual void fix(const_iterator it) = 0;
+
+	virtual void remove(size_type ind) = 0;
+	virtual void remove(iterator it) = 0;
+	virtual void remove(const_iterator it) = 0;
+
+	virtual void pop() = 0;
+
+	virtual bool empty() const = 0;
+	virtual size_type size() const = 0;
+
+	virtual reference top() = 0;
+
+	virtual const_reference top() const = 0;
+
+	virtual reference operator[](size_type ind) = 0;
+	virtual const_reference operator[](size_type ind) const = 0;
+
+	virtual iterator begin() = 0;
+	virtual iterator end() = 0;
+
+	virtual const_iterator begin() const = 0;
+	virtual const_iterator end() const = 0;
+
+	virtual const_iterator cbegin() const = 0;
+	virtual const_iterator cend() const = 0;
+};
+
+template<
+	class T,
+	class Container = std::vector<T>,
+	class Compare = std::less<typename Container::value_type>,
+	class SetIndex = DefaultSetIndex<typename Container::value_type>
+>
+class BinHeapForwarder: public BinHeapInterface<T> {
+public:
+	using heap_type = BinHeap<T, Container, Compare, SetIndex>;
+
+	using container_type = typename heap_type::container_type;
+	using value_compare = typename heap_type::value_compare;
+	using value_set_index = typename heap_type::value_set_index;
+
+	using value_type = typename heap_type::value_type;
+	using size_type = typename heap_type::size_type;
+	using difference_type = typename heap_type::difference_type;
+	using reference = typename heap_type::reference;
+	using const_reference = typename heap_type::const_reference;
+
+	using iterator = typename heap_type::iterator;
+	using const_iterator = typename heap_type::const_iterator;
+
+protected:
+	heap_type heap;
+
+public:
+	template<class... Args>
+	BinHeapForwarder(Args&&... args) : heap(std::forward<Args>(args)...) {}
+
+	BinHeapForwarder(const heap_type& heap) : heap(heap) {}
+	BinHeapForwarder(heap_type&& heap) : heap(std::move(heap)) {}
+
+	void push(const value_type& value) override { heap.push(value); }
+	void push(value_type&& value) override { heap.push(std::move(value)); }
+
+	template<class... Args>
+	void emplace(Args&&... args) { heap.emplace_back(std::forward<Args>(args)...); }
+
+	void fix(size_type ind) override { heap.fix(ind); }
+	void fix(iterator it) override { heap.fix(it); }
+	void fix(const_iterator it) override { heap.fix(it); }
+
+	void remove(size_type ind) override { heap.remove(ind); }
+	void remove(iterator it) override { heap.remove(it); }
+	void remove(const_iterator it) override { heap.remove(it); }
+
+	void pop() override { heap.pop(); }
+
+	bool empty() const override { return heap.empty(); }
+	size_type size() const override { return heap.size(); }
+
+	reference top() override { return heap.top(); }
+
+	const_reference top() const override { return heap.top(); }
+
+	reference operator[](size_type ind) override { return heap[ind]; }
+	const_reference operator[](size_type ind) const override { return heap[ind]; }
+
+	iterator begin() override { return heap.begin(); }
+	iterator end() override { return heap.end(); }
+
+	const_iterator begin() const override { return heap.begin(); }
+	const_iterator end() const override { return heap.end(); }
+
+	const_iterator cbegin() const override { return heap.cbegin(); }
+	const_iterator cend() const override { return heap.cend(); }
+};
+
+template<class T>
+class AnyBinHeap {
+private:
+	std::unique_ptr<BinHeapInterface<T>> heapPtr;
+
+public:
+	using value_type = typename BinHeapInterface<T>::value_type;
+	using size_type = typename BinHeapInterface<T>::size_type;
+	using difference_type = typename BinHeapInterface<T>::difference_type;
+	using reference = typename BinHeapInterface<T>::reference;
+	using const_reference = typename BinHeapInterface<T>::const_reference;
+
+	using iterator = typename BinHeapInterface<T>::iterator;
+	using const_iterator = typename BinHeapInterface<T>::const_iterator;
+
+	AnyBinHeap() = default;
+
+	// template<class WrappedHeap>
+	// AnyBinHeap(WrappedHeap&& h) : heapPtr(std::make_unique<WrappedHeap>(std::forward<WrappedHeap>(h))) {}
+
+	template<class PureHeap>
+	AnyBinHeap(PureHeap&& h) : heapPtr(std::make_unique<BinHeapForwarder<T, typename PureHeap::container_type, typename PureHeap::value_compare, typename PureHeap::value_set_index>>(std::forward<PureHeap>(h))) {}
+
+	// template<class WrappedHeap>
+	// AnyBinHeap& operator=(WrappedHeap&& h) {
+	//    heapPtr = std::make_unique<WrappedHeap>(std::forward<WrappedHeap>(h));
+	//    return *this;
+	// }
+
+	template<class PureHeap>
+	AnyBinHeap& operator=(PureHeap&& h) {
+	   heapPtr = std::make_unique<BinHeapForwarder<T, typename PureHeap::container_type, typename PureHeap::value_compare, typename PureHeap::value_set_index>>(std::forward<PureHeap>(h));
+	   return *this;
+	}
+
+	void push(const value_type& value) { heapPtr->push(value); }
+	void push(value_type&& value) { heapPtr->push(std::move(value)); }
+
+	// template<class... Args>
+	// void emplace(Args&&... args) { heapPtr->emplace_back(std::forward<Args>(args)...); }
+
+	void fix(size_type ind) { heapPtr->fix(ind); }
+	void fix(iterator it) { heapPtr->fix(it); }
+	void fix(const_iterator it) { heapPtr->fix(it); }
+
+	void remove(size_type ind) { heapPtr->remove(ind); }
+	void remove(iterator it) { heapPtr->remove(it); }
+	void remove(const_iterator it) { heapPtr->remove(it); }
+
+	void pop() { heapPtr->pop(); }
+
+	bool empty() const { return heapPtr->empty(); }
+	size_type size() const { return heapPtr->size(); }
+
+	reference top() { return heapPtr->top(); }
+
+	const_reference top() const { return heapPtr->top(); }
+
+	reference operator[](size_type ind) { return (*heapPtr)[ind]; }
+	const_reference operator[](size_type ind) const { return (*heapPtr)[ind]; }
+
+	iterator begin() { return heapPtr->begin(); }
+	iterator end() { return heapPtr->end(); }
+
+	const_iterator begin() const { return heapPtr->begin(); }
+	const_iterator end() const { return heapPtr->end(); }
+
+	const_iterator cbegin() const { return heapPtr->cbegin(); }
+	const_iterator cend() const { return heapPtr->cend(); }
 };
 
 #endif
