@@ -71,6 +71,7 @@ public:
 	using container_type = Container;
 	using value_compare = Compare;
 	using value_set_index = SetIndex;
+	using instantiated_heap_type = BinHeap<T, container_type, value_compare, value_set_index>;
 
 	using value_type = typename Container::value_type;
 	using size_type = typename Container::size_type;
@@ -81,37 +82,45 @@ public:
 	using iterator = typename Container::iterator;
 	using const_iterator = typename Container::const_iterator;
 
+protected:
+	class _OrderedIteratorEntry {
+	protected:
+		const instantiated_heap_type* valueHeap;
+		size_type ind;
+
+	public:
+		bool minHeapCompare(const _OrderedIteratorEntry& other) const {
+			return valueHeap->compare((*valueHeap)[ind], (*valueHeap)[other.ind]);
+		}
+
+		size_type getInd() const {
+			return ind;
+		}
+
+		_OrderedIteratorEntry(const instantiated_heap_type* valueHeap, size_type ind) : valueHeap(valueHeap), ind(ind) {}
+	};
+
+public:
 	template<bool Const>
 	class _OrderedIterator {
 	public:
 		using iterator_category = std::forward_iterator_tag;
-		using value_type = value_type;
+		using value_type = instantiated_heap_type::value_type;
 		using difference_type = std::ptrdiff_t;
-		using reference = typename std::conditional_t<Const, value_type const &, value_type &>;
-		using pointer = typename std::conditional_t<Const, value_type const *, value_type *>;
+		using reference = typename std::conditional_t<Const, const value_type &, value_type &>;
+		using pointer = typename std::conditional_t<Const, const value_type *, value_type *>;
 
-		using value_heap_type = BinHeap<T, container_type, value_compare, value_set_index>;
-		using referenced_heap_type = typename std::conditional_t<Const, value_heap_type const, value_heap_type>;
+		using referenced_heap_type = typename std::conditional_t<Const, const instantiated_heap_type, instantiated_heap_type>;
+		using heap_pointer_type = referenced_heap_type*;
 
 	protected:
-		class Entry {
-		protected:
-			const value_heap_type* valueHeap;
-			size_type ind;
-		public:
-			bool minHeapCompare(const Entry& other) const {
-				return valueHeap->compare((*valueHeap)[ind], (*valueHeap)[other.ind]);
-			}
+		MinBinHeap<_OrderedIteratorEntry> entryHeap;
+		heap_pointer_type valueHeap;
 
-			size_type getInd() const {
-				return ind;
-			}
+		// Grant friend access to const iterators from non-const iterators:
+		template<bool Const1>
+		friend class _OrderedIterator;
 
-			Entry(const value_heap_type* valueHeap, size_type ind) : valueHeap(valueHeap), ind(ind) {}
-		};
-
-		MinBinHeap<Entry> entryHeap;
-		referenced_heap_type* valueHeap;
 	public:
 		/*
 		 * Definitions satisfying the LegacyIterator requirement.
@@ -199,18 +208,19 @@ public:
 
 	template <bool Const>
 	class _OrderedIterable {
-		using iterator_type = std::conditional_t<Const, ordered_iterator, const_ordered_iterator>;
-		using value_heap_type = BinHeap<T, container_type, value_compare, value_set_index>;
-		using referenced_heap_type = typename std::conditional_t<Const, value_heap_type const, value_heap_type>;
-		referenced_heap_type valueHeap;
+		using iterator_type = std::conditional_t<Const, const_ordered_iterator, ordered_iterator>;
+		using const_iterator_type = const_ordered_iterator;
+		using heap_reference_type = typename std::conditional_t<Const, instantiated_heap_type const &, instantiated_heap_type &>;
+
+		heap_reference_type valueHeap;
 
 	public:
-		_OrderedIterable(referenced_heap_type valueHeap) : valueHeap(valueHeap) {}
+		_OrderedIterable(heap_reference_type valueHeap) : valueHeap(valueHeap) {}
 
 		iterator_type begin() const { return iterator_type(&valueHeap, 0); }
 		iterator_type end() const { return iterator_type(&valueHeap); }
-		iterator_type cbegin() const { return iterator_type(&valueHeap, 0); }
-		iterator_type cend() const { return iterator_type(&valueHeap); }
+		const_iterator_type cbegin() const { return const_iterator_type(&valueHeap, 0); }
+		const_iterator_type cend() const { return const_iterator_type(&valueHeap); }
 	};
 
 	using ordered_iterable = _OrderedIterable<false>;
@@ -480,13 +490,13 @@ template<
 >
 class BinHeapVerifier {
 public:
-	using bin_heap_type = BinHeap<T, Container, Compare, SetIndex>;
+	using heap_type = BinHeap<T, Container, Compare, SetIndex>;
 
 private:
-	bin_heap_type& heap;
+	heap_type& heap;
 
 public:
-	BinHeapVerifier(bin_heap_type& heap) : heap(heap) {}
+	BinHeapVerifier(heap_type& heap) : heap(heap) {}
 	bool verify() const {
 		return heap.isHeap(heap.container.cbegin(), heap.container.cbegin(), heap.container.cend());
 	}
