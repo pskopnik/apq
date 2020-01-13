@@ -147,6 +147,12 @@ cdef class Item:
 	def data(self):
 		return self._e.data.obj
 
+	def __eq__(self, Item other):
+		return self._heap == other._heap and self._e == other._e
+
+	def __ne__(self, Item other):
+		return not self.__eq__(other)
+
 	@staticmethod
 	cdef from_pointer(AnyBinHeap[HeapEntry]* heap, Entry* e):
 		i = Item()

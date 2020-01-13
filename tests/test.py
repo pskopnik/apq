@@ -170,6 +170,48 @@ class ValueTest(unittest.TestCase):
 		self.assertEqual(key_second, 'a')
 
 
+class ItemTest(unittest.TestCase):
+	def setUp(self) -> None:
+		self.pq: KeyedPQ[None] = KeyedPQ()
+
+	def _assert_equal(self, item_a: "Item[None]", item_b: "Item[None]") -> None:
+		self.assertTrue(item_a == item_b)
+		self.assertFalse(item_a != item_b)
+
+	def _assert_not_equal(self, item_a: "Item[None]", item_b: "Item[None]") -> None:
+		self.assertTrue(item_a != item_b)
+		self.assertFalse(item_a == item_b)
+
+	def test_equality(self) -> None:
+		item_added = self.pq.add('a', 0.0, None)
+		item_changed = self.pq.change_value('a', 5.0)
+		item_keyed = self.pq['a']
+		item_top = self.pq.peek()
+
+		self._assert_equal(item_added, item_changed)
+		self._assert_equal(item_added, item_keyed)
+		self._assert_equal(item_added, item_top)
+
+		self._assert_equal(item_changed, item_keyed)
+		self._assert_equal(item_changed, item_top)
+
+		self._assert_equal(item_keyed, item_top)
+
+	def test_non_equality(self) -> None:
+		item_a = self.pq.add('a', 0.0, None)
+		item_b = self.pq.add('b', 0.0, None)
+
+		self._assert_not_equal(item_a, item_b)
+
+	def test_different_heaps(self) -> None:
+		pq2: KeyedPQ[None] = KeyedPQ()
+
+		item_a = self.pq.add('a', 0.0, None)
+		item_b = pq2.add('a', 0.0, None)
+
+		self._assert_not_equal(item_a, item_b)
+
+
 class InvariantTest(unittest.TestCase):
 	NUMBER_OF_ENTRIES = 10000
 
