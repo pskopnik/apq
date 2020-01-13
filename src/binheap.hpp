@@ -656,6 +656,49 @@ public:
 	using iterator = typename container_type::iterator;
 	using const_iterator = typename container_type::const_iterator;
 
+	template<bool Const>
+	class _OrderedIterator {
+	public:
+		using iterator_category = std::forward_iterator_tag;
+		using value_type = BinHeapInterface<T>::value_type;
+		using difference_type = std::ptrdiff_t;
+		using reference = typename std::conditional_t<Const, value_type const &, value_type &>;
+		using pointer = typename std::conditional_t<Const, value_type const *, value_type *>;
+
+		virtual ~_OrderedIterator() {}
+
+		virtual reference operator*() const = 0;
+		virtual pointer operator->() const = 0;
+		virtual _OrderedIterator<Const>& operator++() = 0;
+		virtual std::unique_ptr<_OrderedIterator<Const>> operator++(int) = 0;
+		virtual bool operator==(const _OrderedIterator<Const>& other) const = 0;
+		virtual bool operator!=(const _OrderedIterator<Const>& other) const = 0;
+
+		virtual std::unique_ptr<_OrderedIterator<Const>> clone() const = 0;
+
+		virtual operator std::unique_ptr<_OrderedIterator<true>>() const = 0;
+	};
+
+	using ordered_iterator = _OrderedIterator<false>;
+	using const_ordered_iterator = _OrderedIterator<true>;
+
+	template<bool Const>
+	class _OrderedIterable {
+	public:
+		using iterator_type = std::conditional_t<Const, const_ordered_iterator, ordered_iterator>;
+		using const_iterator_type = const_ordered_iterator;
+
+		virtual ~_OrderedIterable() {}
+
+		virtual std::unique_ptr<iterator_type> begin() const = 0;
+		virtual std::unique_ptr<iterator_type> end() const = 0;
+		virtual std::unique_ptr<const_iterator_type> cbegin() const = 0;
+		virtual std::unique_ptr<const_iterator_type> cend() const = 0;
+	};
+
+	using ordered_iterable = _OrderedIterable<false>;
+	using const_ordered_iterable  = _OrderedIterable<true>;
+
 	virtual ~BinHeapInterface() {};
 
 	virtual void push(const value_type& value) = 0;
@@ -692,6 +735,9 @@ public:
 
 	virtual const_iterator cbegin() const = 0;
 	virtual const_iterator cend() const = 0;
+
+	virtual std::unique_ptr<ordered_iterable> orderedIterable() = 0;
+	virtual std::unique_ptr<const_ordered_iterable> orderedIterable() const = 0;
 };
 
 template<
@@ -703,19 +749,96 @@ template<
 class BinHeapForwarder: public BinHeapInterface<T> {
 public:
 	using heap_type = BinHeap<T, Container, Compare, SetIndex>;
+	using heap_interface = BinHeapInterface<T>;
 
 	using container_type = typename heap_type::container_type;
 	using value_compare = typename heap_type::value_compare;
 	using value_set_index = typename heap_type::value_set_index;
 
-	using value_type = typename heap_type::value_type;
-	using size_type = typename heap_type::size_type;
-	using difference_type = typename heap_type::difference_type;
-	using reference = typename heap_type::reference;
-	using const_reference = typename heap_type::const_reference;
+	using value_type = typename heap_interface::value_type;
+	using size_type = typename heap_interface::size_type;
+	using difference_type = typename heap_interface::difference_type;
+	using reference = typename heap_interface::reference;
+	using const_reference = typename heap_interface::const_reference;
 
-	using iterator = typename heap_type::iterator;
-	using const_iterator = typename heap_type::const_iterator;
+	using iterator = typename heap_interface::iterator;
+	using const_iterator = typename heap_interface::const_iterator;
+
+	using ordered_iterator = typename heap_interface::ordered_iterator;
+	using const_ordered_iterator = typename heap_interface::const_ordered_iterator;
+
+	using ordered_iterable = typename heap_interface::ordered_iterable;
+	using const_ordered_iterable = typename heap_interface::const_ordered_iterable;
+
+	template<bool Const>
+	class _OrderedIterator: public heap_interface::template _OrderedIterator<Const> {
+	public:
+		using iterator_type = typename std::conditional_t<Const, typename heap_type::const_ordered_iterator, typename heap_type::ordered_iterator>;
+		using const_iterator_type = typename heap_type::const_ordered_iterator;
+
+		using iterator_interface = std::conditional_t<Const, const_ordered_iterator, ordered_iterator>;
+		using const_iterator_interface = const_ordered_iterator;
+
+		using _iterator_forwarder = _OrderedIterator<Const>;
+		using _const_iterator_forwarder = _OrderedIterator<true>;
+
+		using iterator_category = typename iterator_type::iterator_category;
+		using value_type = typename iterator_type::value_type;
+		using difference_type = typename iterator_type::difference_type;
+		using reference = typename iterator_type::reference;
+		using pointer = typename iterator_type::pointer;
+
+	protected:
+		iterator_type iterator;
+
+	public:
+		_OrderedIterator(const iterator_type& iterator) : iterator(iterator) {}
+		_OrderedIterator(iterator_type&& iterator) : iterator(std::move(iterator)) {}
+
+		reference operator*() const override { return *iterator; }
+		pointer operator->() const override { return iterator.operator->(); }
+		iterator_interface& operator++() override {
+			++iterator;
+			return *this;
+		}
+		std::unique_ptr<iterator_interface> operator++(int) override { return std::make_unique<_iterator_forwarder>(iterator++); }
+		bool operator==(const iterator_interface& other) const override { return iterator == dynamic_cast<const _iterator_forwarder&>(other).iterator; }
+		bool operator!=(const iterator_interface& other) const override { return iterator != dynamic_cast<const _iterator_forwarder&>(other).iterator; }
+
+		std::unique_ptr<iterator_interface> clone() const override { return std::make_unique<_iterator_forwarder>(iterator); }
+
+		operator std::unique_ptr<const_iterator_interface>() const override { return std::make_unique<_const_iterator_forwarder>(const_iterator_type(iterator)); }
+	};
+
+	using _ordered_iterator_forwarder = _OrderedIterator<false>;
+	using _const_ordered_iterator_forwarder  = _OrderedIterator<true>;
+
+	template<bool Const>
+	class _OrderedIterable: public heap_interface::template _OrderedIterable<Const> {
+	public:
+		using iterable_type = typename std::conditional_t<Const, typename heap_type::const_ordered_iterable, typename heap_type::ordered_iterable>;
+
+		using iterator_interface = std::conditional_t<Const, const_ordered_iterator, ordered_iterator>;
+		using const_iterator_interface = const_ordered_iterator;
+
+		using _iterator_forwarder = std::conditional_t<Const, _const_ordered_iterator_forwarder, _ordered_iterator_forwarder>;
+		using _const_iterator_forwarder = _const_ordered_iterator_forwarder;
+
+	protected:
+		iterable_type iterable;
+
+	public:
+		_OrderedIterable(const iterable_type& iterable) : iterable(iterable) {}
+		_OrderedIterable(iterable_type&& iterable) : iterable(std::move(iterable)) {}
+
+		std::unique_ptr<iterator_interface> begin() const override { return std::make_unique<_iterator_forwarder>(iterable.begin()); }
+		std::unique_ptr<iterator_interface> end() const override { return std::make_unique<_iterator_forwarder>(iterable.end()); }
+		std::unique_ptr<const_iterator_interface> cbegin() const override { return std::make_unique<_const_iterator_forwarder>(iterable.cbegin()); }
+		std::unique_ptr<const_iterator_interface> cend() const override { return std::make_unique<_const_iterator_forwarder>(iterable.cend()); }
+	};
+
+	using _ordered_iterable_forwarder = _OrderedIterable<false>;
+	using _const_ordered_iterable_forwarder  = _OrderedIterable<true>;
 
 protected:
 	heap_type heap;
@@ -761,22 +884,103 @@ public:
 
 	const_iterator cbegin() const override { return heap.cbegin(); }
 	const_iterator cend() const override { return heap.cend(); }
+
+	std::unique_ptr<ordered_iterable> orderedIterable() override { return std::make_unique<_ordered_iterable_forwarder>(heap.orderedIterable()); }
+	std::unique_ptr<const_ordered_iterable> orderedIterable() const override { return std::make_unique<_const_ordered_iterable_forwarder>(heap.orderedIterable()); }
 };
 
 template<class T>
 class AnyBinHeap {
+public:
+	using heap_interface = BinHeapInterface<T>;
+
 private:
-	std::unique_ptr<BinHeapInterface<T>> heapPtr;
+	std::unique_ptr<heap_interface> heapPtr;
 
 public:
-	using value_type = typename BinHeapInterface<T>::value_type;
-	using size_type = typename BinHeapInterface<T>::size_type;
-	using difference_type = typename BinHeapInterface<T>::difference_type;
-	using reference = typename BinHeapInterface<T>::reference;
-	using const_reference = typename BinHeapInterface<T>::const_reference;
+	using value_type = typename heap_interface::value_type;
+	using size_type = typename heap_interface::size_type;
+	using difference_type = typename heap_interface::difference_type;
+	using reference = typename heap_interface::reference;
+	using const_reference = typename heap_interface::const_reference;
 
-	using iterator = typename BinHeapInterface<T>::iterator;
-	using const_iterator = typename BinHeapInterface<T>::const_iterator;
+	using iterator = typename heap_interface::iterator;
+	using const_iterator = typename heap_interface::const_iterator;
+
+	template<bool Const>
+	class _OrderedIterator {
+	public:
+		using iterator_interface = typename std::conditional_t<Const, typename heap_interface::const_ordered_iterator, typename heap_interface::ordered_iterator>;
+		using const_iterator_interface = typename heap_interface::const_ordered_iterator;
+
+		using iterator_category = typename iterator_interface::iterator_category;
+		using value_type = typename iterator_interface::value_type;
+		using difference_type = typename iterator_interface::difference_type;
+		using reference = typename iterator_interface::reference;
+		using pointer = typename iterator_interface::pointer;
+
+	protected:
+		std::unique_ptr<iterator_interface> iteratorPtr;
+
+	public:
+		_OrderedIterator() = default;
+		// _OrderedIterator(const std::unique_ptr<iterator_interface>& iteratorPtr) : iteratorPtr(iteratorPtr) {} // TODO, does this make sense?
+		_OrderedIterator(std::unique_ptr<iterator_interface>&& iteratorPtr) : iteratorPtr(std::move(iteratorPtr)) {}
+
+		_OrderedIterator(const _OrderedIterator<Const>& other) : iteratorPtr(other.iteratorPtr->clone()) {}
+		_OrderedIterator(_OrderedIterator<Const>&& other) : iteratorPtr(std::move(other.iteratorPtr)) {}
+
+		_OrderedIterator<Const>& operator=(const _OrderedIterator<Const>& other) {
+			iteratorPtr = other.iteratorPtr->clone();
+			return *this;
+		}
+		_OrderedIterator<Const>& operator=(_OrderedIterator<Const>&& other) {
+			iteratorPtr = std::move(other.iteratorPtr);
+			return *this;
+		}
+
+		~_OrderedIterator() = default;
+
+		reference operator*() const { return **iteratorPtr; }
+		pointer operator->() const { return iteratorPtr->operator->(); }
+		_OrderedIterator<Const>& operator++() {
+			++(*iteratorPtr);
+			return *this;
+		}
+		_OrderedIterator<Const> operator++(int) { return _OrderedIterator<Const>((*iteratorPtr)++); }
+		bool operator==(const _OrderedIterator<Const>& other) { return (*iteratorPtr) == (*other.iteratorPtr); }
+		bool operator!=(const _OrderedIterator<Const>& other) { return (*iteratorPtr) != (*other.iteratorPtr); }
+
+		operator _OrderedIterator<true>() const { return _OrderedIterator<true>(std::unique_ptr<const_iterator_interface>(*iteratorPtr)); }
+	};
+
+	using ordered_iterator = _OrderedIterator<false>;
+	using const_ordered_iterator = _OrderedIterator<true>;
+
+	template<bool Const>
+	class _OrderedIterable {
+	public:
+		using iterable_interface = typename std::conditional_t<Const, typename heap_interface::const_ordered_iterable, typename heap_interface::ordered_iterable>;
+
+		using iterator_type = typename std::conditional_t<Const, const_ordered_iterator, ordered_iterator>;
+		using const_iterator_type = const_ordered_iterator;
+
+	private:
+		std::unique_ptr<iterable_interface> iterablePtr;
+
+	public:
+		_OrderedIterable() = default;
+		// _OrderedIterable(const std::unique_ptr<iterable_interface>& iterablePtr) : iterablePtr(iterablePtr) {} // TODO, does this make sense?
+		_OrderedIterable(std::unique_ptr<iterable_interface>&& iterablePtr) : iterablePtr(std::move(iterablePtr)) {}
+
+		iterator_type begin() const { return iterator_type(iterablePtr->begin()); }
+		iterator_type end() const { return iterator_type(iterablePtr->end()); }
+		const_iterator_type cbegin() const { return const_iterator_type(iterablePtr->cbegin()); }
+		const_iterator_type cend() const { return const_iterator_type(iterablePtr->cend()); }
+	};
+
+	using ordered_iterable = _OrderedIterable<false>;
+	using const_ordered_iterable = _OrderedIterable<true>;
 
 	AnyBinHeap() = default;
 
@@ -832,6 +1036,9 @@ public:
 
 	const_iterator cbegin() const { return heapPtr->cbegin(); }
 	const_iterator cend() const { return heapPtr->cend(); }
+
+	ordered_iterable orderedIterable() { return ordered_iterable(heapPtr->orderedIterable()); }
+	const_ordered_iterable orderedIterable() const { return const_ordered_iterable(heapPtr->orderedIterable()); }
 };
 
 #endif
