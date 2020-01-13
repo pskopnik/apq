@@ -272,14 +272,9 @@ cdef class KeyedPQ:
 	def _export(self):
 		l = []
 
-		cdef AnyBinHeap[HeapEntry].iterator begin_it, end_it, it
-
-		begin_it = self._heap.begin()
-		end_it = self._heap.end()
-		it = begin_it
-		while it != end_it:
-			l.append(dereference(it).getValue())
-			preincrement(it)
+		cdef HeapEntry entry
+		for entry in self._heap:
+			l.append(entry.getValue())
 
 		return l
 
