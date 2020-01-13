@@ -406,6 +406,23 @@ class EndToEndTest(unittest.TestCase):
 		for i, val in enumerate(addressable_pq_pop_all(self.pq)):
 			self.assertEqual(val, self.l[i])
 
+	def test_ordered_iter(self) -> None:
+		# Setup
+
+		for i in range(10000):
+			val = random.random()
+			self.pq.add(str(i), val, None)
+			self.l.append(val)
+
+		self._sort_l()
+
+		# Test
+
+		for i, it in enumerate(self.pq.ordered_iter()):
+			self.assertEqual(it.value, self.l[i])
+
+		self.assertEqual(len(self.pq), 10000)
+
 
 class MaxHeapEndToEndTest(EndToEndTest):
 	def setUp(self) -> None:

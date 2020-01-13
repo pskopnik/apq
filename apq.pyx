@@ -16,6 +16,9 @@ cdef extern from "src/binheap.hpp" nogil:
 		ctypedef Compare value_compare
 		ctypedef SetIndex value_set_index
 
+	cdef cppclass AnyBinHeap[T]:
+		ctypedef T value_type
+
 		# note adapted from vector.pxd:
 		# these should really be container_type.size_type, ...
 		# but cython doesn't support deferred access on template arguments
@@ -26,7 +29,28 @@ cdef extern from "src/binheap.hpp" nogil:
 		ctypedef vector[value_type].iterator iterator
 		ctypedef vector[value_type].const_iterator const_iterator
 
-		BinHeap() except +
+		cppclass ordered_iterator:
+			T& operator*()
+			ordered_iterator operator++()
+			bint operator==(ordered_iterator)
+			bint operator!=(ordered_iterator)
+		cppclass const_ordered_iterator(ordered_iterator):
+			pass
+
+		cppclass ordered_iterable:
+			ordered_iterator begin()
+			ordered_iterator end()
+			const_ordered_iterator cbegin()
+			const_ordered_iterator cend()
+		cppclass const_ordered_iterable:
+			const_ordered_iterator begin()
+			const_ordered_iterator end()
+			const_ordered_iterator cbegin()
+			const_ordered_iterator cend()
+
+		AnyBinHeap() except +
+		AnyBinHeap(BinHeap[T]) except +
+		AnyBinHeap& operator=(BinHeap[T]) except +
 
 		void push(value_type&) except +
 		void fix(size_type)
@@ -46,23 +70,8 @@ cdef extern from "src/binheap.hpp" nogil:
 		const_iterator const_end "end"()
 		const_iterator cbegin()
 		const_iterator cend()
-
-	cdef cppclass AnyBinHeap[T](BinHeap[T]):
-		ctypedef T value_type
-
-		# note adapted from vector.pxd:
-		# these should really be container_type.size_type, ...
-		# but cython doesn't support deferred access on template arguments
-
-		ctypedef size_t size_type
-		ctypedef ptrdiff_t difference_type
-
-		ctypedef vector[value_type].iterator iterator
-		ctypedef vector[value_type].const_iterator const_iterator
-
-		AnyBinHeap()
-		AnyBinHeap(BinHeap[T])
-		AnyBinHeap& operator=(BinHeap[T])
+		ordered_iterable orderedIterable()
+		const_ordered_iterable const_orderedIterable "orderedIterable"()
 
 	cdef cppclass MinHeapCompare[T]:
 		pass
@@ -71,39 +80,9 @@ cdef extern from "src/binheap.hpp" nogil:
 		pass
 
 	cdef cppclass MinBinHeap[T, Container=*, SetIndex=*](BinHeap[T, Container, MinHeapCompare[T], SetIndex]):
-		ctypedef T value_type
-		ctypedef Container container_type
-		ctypedef MinHeapCompare[T] Compare
-		ctypedef SetIndex value_set_index
-
-		# note adapted from vector.pxd:
-		# these should really be container_type.size_type, ...
-		# but cython doesn't support deferred access on template arguments
-
-		ctypedef size_t size_type
-		ctypedef ptrdiff_t difference_type
-
-		ctypedef vector[value_type].iterator iterator
-		ctypedef vector[value_type].const_iterator const_iterator
-
 		MinBinHeap()
 
 	cdef cppclass MaxBinHeap[T, Container=*, SetIndex=*](BinHeap[T, Container, MaxHeapCompare[T], SetIndex]):
-		ctypedef T value_type
-		ctypedef Container container_type
-		ctypedef MaxHeapCompare[T] Compare
-		ctypedef SetIndex value_set_index
-
-		# note adapted from vector.pxd:
-		# these should really be container_type.size_type, ...
-		# but cython doesn't support deferred access on template arguments
-
-		ctypedef size_t size_type
-		ctypedef ptrdiff_t difference_type
-
-		ctypedef vector[value_type].iterator iterator
-		ctypedef vector[value_type].const_iterator const_iterator
-
 		MaxBinHeap()
 
 	cdef cppclass StandardEntry[T, V=*, ChangeTSTracking=*, SetIndex=*]:
@@ -267,6 +246,12 @@ cdef class KeyedPQ:
 		self._lookup_map.erase(key)
 
 		return key.decode('utf8'), value, data
+
+	def ordered_iter(self):
+		cdef AnyBinHeap[HeapEntry].ordered_iterable iterable = self._heap.orderedIterable()
+		cdef HeapEntry entry
+		for entry in iterable:
+			yield Item.from_pointer(&self._heap, entry.getData())
 
 	cdef Entry* _lookup(self, string key) except +KeyError:
 		return &self._lookup_map.at(key)

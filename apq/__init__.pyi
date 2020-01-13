@@ -1,4 +1,4 @@
-from typing import Generic, List, Tuple, TypeVar, Union
+from typing import Generic, Iterator, List, Tuple, TypeVar, Union
 
 
 DataType = TypeVar('DataType')
@@ -47,6 +47,9 @@ class KeyedPQ(Generic[DataType]):
 		...
 
 	def pop(self) -> Tuple[str, float, DataType]:
+		...
+
+	def ordered_iter(self) -> Iterator[Item[DataType]]:
 		...
 
 	def _export(self) -> List[float]:
