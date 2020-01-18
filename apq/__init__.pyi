@@ -17,6 +17,13 @@ class Item(Generic[DataType]):
 	def data(self) -> DataType:
 		...
 
+	def __eq__(self, other: Any) -> bool:
+		...
+
+	def __ne__(self, other: Any) -> bool:
+		...
+
+
 
 class KeyedPQ(Generic[DataType]):
 	def __init__(self, max_heap: bool=False) -> None:

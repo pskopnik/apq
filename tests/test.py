@@ -174,13 +174,13 @@ class ItemTest(unittest.TestCase):
 	def setUp(self) -> None:
 		self.pq: KeyedPQ[None] = KeyedPQ()
 
-	def _assert_equal(self, item_a: "Item[None]", item_b: "Item[None]") -> None:
-		self.assertTrue(item_a == item_b)
-		self.assertFalse(item_a != item_b)
+	def _assert_equal(self, a: typing.Any, b: typing.Any) -> None:
+		self.assertTrue(a == b)
+		self.assertFalse(a != b)
 
-	def _assert_not_equal(self, item_a: "Item[None]", item_b: "Item[None]") -> None:
-		self.assertTrue(item_a != item_b)
-		self.assertFalse(item_a == item_b)
+	def _assert_not_equal(self, a: typing.Any, b: typing.Any) -> None:
+		self.assertTrue(a != b)
+		self.assertFalse(a == b)
 
 	def test_equality(self) -> None:
 		item_added = self.pq.add('a', 0.0, None)
@@ -210,6 +210,16 @@ class ItemTest(unittest.TestCase):
 		item_b = pq2.add('a', 0.0, None)
 
 		self._assert_not_equal(item_a, item_b)
+
+	def test_different_type(self) -> None:
+		item_a = self.pq.add('a', 0.0, None)
+
+		self._assert_not_equal(item_a, 'a')
+		self._assert_not_equal(item_a, 0.0)
+		self._assert_not_equal(item_a, None)
+
+		self._assert_not_equal(item_a, self)
+		self._assert_not_equal(item_a, self.pq)
 
 
 class InvariantTest(unittest.TestCase):
