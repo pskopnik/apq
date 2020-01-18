@@ -1,8 +1,12 @@
+ifneq ($(TEST_PATTERN),)
+	TEST_FLAGS := -k $(TEST_PATTERN)
+endif
+
 test:
 	pipenv run cython -a --cplus -Werror -Wextra apq.pyx
 	pipenv install -e .
 	pipenv run mypy --strict tests
-	pipenv run python -m unittest tests/test.py
+	pipenv run python -m unittest tests/test.py $(TEST_FLAGS)
 
 bench-basic:
 	pipenv run mypy --strict bench
