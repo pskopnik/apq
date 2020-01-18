@@ -924,7 +924,6 @@ public:
 
 	public:
 		_OrderedIterator() = default;
-		// _OrderedIterator(const std::unique_ptr<iterator_interface>& iteratorPtr) : iteratorPtr(iteratorPtr) {} // TODO, does this make sense?
 		_OrderedIterator(std::unique_ptr<iterator_interface>&& iteratorPtr) : iteratorPtr(std::move(iteratorPtr)) {}
 
 		_OrderedIterator(const _OrderedIterator<Const>& other) : iteratorPtr(other.iteratorPtr->clone()) {}
@@ -941,17 +940,20 @@ public:
 
 		~_OrderedIterator() = default;
 
-		reference operator*() const { return **iteratorPtr; }
-		pointer operator->() const { return iteratorPtr->operator->(); }
+		reference operator*() const { return *static_cast<const iterator_interface&>(*iteratorPtr); }
+		pointer operator->() const { return static_cast<const iterator_interface&>(*iteratorPtr).operator->(); }
 		_OrderedIterator<Const>& operator++() {
 			++(*iteratorPtr);
 			return *this;
 		}
 		_OrderedIterator<Const> operator++(int) { return _OrderedIterator<Const>((*iteratorPtr)++); }
-		bool operator==(const _OrderedIterator<Const>& other) { return (*iteratorPtr) == (*other.iteratorPtr); }
-		bool operator!=(const _OrderedIterator<Const>& other) { return (*iteratorPtr) != (*other.iteratorPtr); }
+		bool operator==(const _OrderedIterator<Const>& other) const { return static_cast<const iterator_interface&>(*iteratorPtr) == (*other.iteratorPtr); }
+		bool operator!=(const _OrderedIterator<Const>& other) const { return static_cast<const iterator_interface&>(*iteratorPtr) != (*other.iteratorPtr); }
 
-		operator _OrderedIterator<true>() const { return _OrderedIterator<true>(std::unique_ptr<const_iterator_interface>(*iteratorPtr)); }
+		operator _OrderedIterator<true>() const {
+			// The conversion operator is virtually overloaded to allocate and return a copy of the iterator on the heap
+			return _OrderedIterator<true>(std::unique_ptr<const_iterator_interface>(static_cast<const iterator_interface&>(*iteratorPtr)));
+		}
 	};
 
 	using ordered_iterator = _OrderedIterator<false>;
@@ -970,13 +972,12 @@ public:
 
 	public:
 		_OrderedIterable() = default;
-		// _OrderedIterable(const std::unique_ptr<iterable_interface>& iterablePtr) : iterablePtr(iterablePtr) {} // TODO, does this make sense?
 		_OrderedIterable(std::unique_ptr<iterable_interface>&& iterablePtr) : iterablePtr(std::move(iterablePtr)) {}
 
-		iterator_type begin() const { return iterator_type(iterablePtr->begin()); }
-		iterator_type end() const { return iterator_type(iterablePtr->end()); }
-		const_iterator_type cbegin() const { return const_iterator_type(iterablePtr->cbegin()); }
-		const_iterator_type cend() const { return const_iterator_type(iterablePtr->cend()); }
+		iterator_type begin() const { return iterator_type(static_cast<const iterable_interface&>(*iterablePtr).begin()); }
+		iterator_type end() const { return iterator_type(static_cast<const iterable_interface&>(*iterablePtr).end()); }
+		const_iterator_type cbegin() const { return const_iterator_type(static_cast<const iterable_interface&>(*iterablePtr).cbegin()); }
+		const_iterator_type cend() const { return const_iterator_type(static_cast<const iterable_interface&>(*iterablePtr).cend()); }
 	};
 
 	using ordered_iterable = _OrderedIterable<false>;
@@ -1018,27 +1019,27 @@ public:
 
 	void pop() { heapPtr->pop(); }
 
-	bool empty() const { return heapPtr->empty(); }
-	size_type size() const { return heapPtr->size(); }
+	bool empty() const { return static_cast<const heap_interface&>(*heapPtr).empty(); }
+	size_type size() const { return static_cast<const heap_interface&>(*heapPtr).size(); }
 
 	reference top() { return heapPtr->top(); }
 
-	const_reference top() const { return heapPtr->top(); }
+	const_reference top() const { return static_cast<const heap_interface&>(*heapPtr).top(); }
 
 	reference operator[](size_type ind) { return (*heapPtr)[ind]; }
-	const_reference operator[](size_type ind) const { return (*heapPtr)[ind]; }
+	const_reference operator[](size_type ind) const { return static_cast<const heap_interface&>(*heapPtr)[ind]; }
 
 	iterator begin() { return heapPtr->begin(); }
 	iterator end() { return heapPtr->end(); }
 
-	const_iterator begin() const { return heapPtr->begin(); }
-	const_iterator end() const { return heapPtr->end(); }
+	const_iterator begin() const { return static_cast<const heap_interface&>(*heapPtr).begin(); }
+	const_iterator end() const { return static_cast<const heap_interface&>(*heapPtr).end(); }
 
-	const_iterator cbegin() const { return heapPtr->cbegin(); }
-	const_iterator cend() const { return heapPtr->cend(); }
+	const_iterator cbegin() const { return static_cast<const heap_interface&>(*heapPtr).cbegin(); }
+	const_iterator cend() const { return static_cast<const heap_interface&>(*heapPtr).cend(); }
 
 	ordered_iterable orderedIterable() { return ordered_iterable(heapPtr->orderedIterable()); }
-	const_ordered_iterable orderedIterable() const { return const_ordered_iterable(heapPtr->orderedIterable()); }
+	const_ordered_iterable orderedIterable() const { return const_ordered_iterable(static_cast<const heap_interface&>(*heapPtr).orderedIterable()); }
 };
 
 #endif
