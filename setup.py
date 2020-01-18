@@ -22,8 +22,5 @@ setup(
 		extensions,
 		annotate = True,
 		# gdb_debug = True,
-		compiler_directives = {
-			'embedsignature': True,
-		}
 	),
 )

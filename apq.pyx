@@ -1,5 +1,6 @@
 # distutils: language = c++
 # cython: language_level = 3
+# cython: embedsignature = True
 
 from libcpp.string cimport string
 from libcpp.vector cimport vector
