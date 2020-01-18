@@ -8,77 +8,85 @@ import unittest
 from apq import KeyedPQ, Item
 
 
+class DummyClass(object):
+	pass
+
+
 class KeyTest(unittest.TestCase):
 	def setUp(self) -> None:
 		self.pq: KeyedPQ[None] = KeyedPQ()
 
+	def _assert_contained(self, identifier: "typing.Union[str, Item[None]]", key: "typing.Optional[str]"=None) -> None:
+		key_str: str
+		if key is not None:
+			key_str = key
+		else:
+			if isinstance(identifier, str):
+				key_str = identifier
+			else:
+				raise ValueError("Argument key required if identifier is not a string")
+
+		self.assertTrue(identifier in self.pq)
+		self.assertEqual(self.pq[identifier].key, key_str)
+		item = self.pq.get(identifier)
+		self.assertIsNotNone(item)
+		self.assertEqual(typing.cast("Item[None]", item).key, key_str)
+
+	def _assert_not_contained(self, identifier: "typing.Union[str, Item[None]]") -> None:
+		self.assertFalse(identifier in self.pq)
+		with self.assertRaises(KeyError):
+			item = self.pq[identifier]
+		self.assertIsNone(self.pq.get(identifier))
+
 	def test_existing_str_key(self) -> None:
 		self.pq.add('a', 0.0, None)
 
-		self.assertTrue('a' in self.pq)
-		self.assertEqual(self.pq['a'].key, 'a')
+		self._assert_contained('a')
 
 	def test_unknown_str_key(self) -> None:
-		self.assertFalse('b' in self.pq)
-		with self.assertRaises(KeyError):
-			item = self.pq['a']
+		self._assert_not_contained('a')
 
 	def test_removed_str_key(self) -> None:
 		self.pq.add('a', 0.0, None)
 		del self.pq['a']
 
-		self.assertFalse('a' in self.pq)
-		with self.assertRaises(KeyError):
-			item = self.pq['a']
+		self._assert_not_contained('a')
 
 		self.pq.add('b', 0.0, None)
 		self.pq.pop()
 
-		self.assertFalse('b' in self.pq)
-		with self.assertRaises(KeyError):
-			item = self.pq['b']
+		self._assert_not_contained('b')
 
 	def test_existing_item_key(self) -> None:
 		item = self.pq.add('a', 0.0, None)
 
-		self.assertTrue(item in self.pq)
-		self.assertEqual(self.pq[item].key, 'a')
+		self._assert_contained(item, key='a')
 
 	def test_unknown_item_key(self) -> None:
 		item: Item[None] = Item()
 
-		self.assertFalse(item in self.pq)
-		with self.assertRaises(KeyError):
-			item = self.pq[item]
+		self._assert_not_contained(item)
 
 	def test_others_item_key(self) -> None:
 		pq2: KeyedPQ[None] = KeyedPQ()
 		item2 = pq2.add('a', 0.0, None)
 
-		self.assertFalse(item2 in self.pq)
-		with self.assertRaises(KeyError):
-			item = self.pq[item2]
+		self._assert_not_contained(item2)
 
 		self.pq.add('a', 0.0, None)
 
-		self.assertFalse(item2 in self.pq)
-		with self.assertRaises(KeyError):
-			item = self.pq[item2]
+		self._assert_not_contained(item2)
 
 	def test_removed_item_key(self) -> None:
 		item_a = self.pq.add('a', 0.0, None)
 		del self.pq['a']
 
-		self.assertFalse(item_a in self.pq)
-		with self.assertRaises(KeyError):
-			item = self.pq[item_a]
+		self._assert_not_contained(item_a)
 
 		item_b = self.pq.add('b', 0.0, None)
 		self.pq.pop()
 
-		self.assertFalse(item_b in self.pq)
-		with self.assertRaises(KeyError):
-			item = self.pq[item_b]
+		self._assert_not_contained(item_b)
 
 	def test_add_duplicate_str_key(self) -> None:
 		self.pq.add('a', 0.0, None)
@@ -98,11 +106,8 @@ class KeyTest(unittest.TestCase):
 		with self.assertRaises(TypeError):
 			self.pq[typing.cast(typing.Any, 4.5)]
 
-		class A(object):
-			pass
-
 		with self.assertRaises(TypeError):
-			self.pq[typing.cast(typing.Any, A())]
+			self.pq[typing.cast(typing.Any, DummyClass())]
 
 		with self.assertRaises(TypeError):
 			self.pq[typing.cast(typing.Any, (4,))]
@@ -168,6 +173,86 @@ class ValueTest(unittest.TestCase):
 		self.assertEqual(key_first, 'b')
 		key_second, _, _ = self.pq.pop()
 		self.assertEqual(key_second, 'a')
+
+
+class MappingStyleInterfaceTest(unittest.TestCase):
+	def setUp(self) -> None:
+		self.pq: KeyedPQ[DummyClass] = KeyedPQ()
+
+	def test_equality(self) -> None:
+		self.assertTrue(self.pq == self.pq)
+		self.assertFalse(self.pq != self.pq)
+
+	def test_non_equality(self) -> None:
+		pq2: KeyedPQ[None] = KeyedPQ()
+
+		self.assertTrue(self.pq != pq2)
+		self.assertFalse(self.pq == pq2)
+
+		self.assertTrue(self.pq != None)
+		self.assertFalse(self.pq == None)
+
+		self.assertTrue(self.pq != 4.0)
+		self.assertFalse(self.pq == 4.0)
+
+	def test_get_item_default(self) -> None:
+		self.assertIsNone(self.pq.get('a'))
+		self.assertIsNone(self.pq.get('a', default=None))
+		self.assertEqual(self.pq.get('a', default=4.0), 4.0)
+
+	def test_collection_property(self) -> None:
+		# Setup
+
+		s: typing.Set[typing.Tuple[str, float, DummyClass]] = set()
+
+		for i in range(1000):
+			val = random.random()
+			add_tuple = (str(i), val, DummyClass())
+			self.pq.add(*add_tuple)
+			s.add(add_tuple)
+
+		# Test
+
+		for key, value in self.pq.items():
+			self.assertTrue(key in self.pq)
+			self.assertTrue(value in self.pq)
+			self.assertEqual(key, value.key)
+			self.assertTrue((key, value.value, value.data) in s)
+			s.remove((key, value.value, value.data))
+
+		self.assertEqual(len(s), 0)
+
+	def test_iterable_order(self,) -> None:
+		# Setup
+
+		for i in range(1000):
+			val = random.random()
+			self.pq.add(str(i), val, DummyClass())
+
+		# Test
+
+		zipped = itertools.zip_longest(
+			self.pq.keys(),
+			self.pq.values(),
+			self.pq.items(),
+			iter(self.pq),
+		)
+
+		for key, value, (item_key, item_value), iter_value in zipped:
+			self.assertTrue(key in self.pq)
+
+			self.assertEqual(key, value.key)
+			self.assertEqual(key, item_key)
+			self.assertEqual(key, item_value.key)
+			self.assertEqual(key, iter_value.key)
+
+			self.assertEqual(value.value, self.pq[key].value)
+			self.assertEqual(value.value, item_value.value)
+			self.assertEqual(value.value, iter_value.value)
+
+			self.assertIs(value.data, self.pq[key].data)
+			self.assertIs(value.data, item_value.data)
+			self.assertIs(value.data, iter_value.data)
 
 
 class ItemTest(unittest.TestCase):

@@ -1,7 +1,8 @@
-from typing import Generic, Iterator, List, Tuple, TypeVar, Union
+from typing import Any, Generic, Generator, List, Optional, overload, Tuple, TypeVar, Union
 
 
 DataType = TypeVar('DataType')
+T = TypeVar('T')
 
 
 class Item(Generic[DataType]):
@@ -24,7 +25,6 @@ class Item(Generic[DataType]):
 		...
 
 
-
 class KeyedPQ(Generic[DataType]):
 	def __init__(self, max_heap: bool=False) -> None:
 		...
@@ -35,13 +35,39 @@ class KeyedPQ(Generic[DataType]):
 	def __contains__(self, identifier: Union[str, Item[DataType]]) -> bool:
 		...
 
+	def __iter__(self) -> Generator[Item[DataType], None, None]:
+		...
+
 	def __getitem__(self, identifier: Union[str, Item[DataType]]) -> Item[DataType]:
 		...
 
 	def __delitem__(self, identifier: Union[str, Item[DataType]]) -> None:
 		...
 
+	def __eq__(self, other: Any) -> bool:
+		...
+
+	def __ne__(self, other: Any) -> bool:
+		...
+
+	@overload
+	def get(self, identifier: Union[str, Item[DataType]]) -> Optional[Item[DataType]]:
+		...
+
+	@overload
+	def get(self, identifier: Union[str, Item[DataType]], default: Union[Item[DataType], T]) -> Union[Item[DataType], T]:
+		...
+
 	def add(self, key: str, value: float, data: DataType) -> Item[DataType]:
+		...
+
+	def items(self) -> Generator[Tuple[str, Item[DataType]], None, None]:
+		...
+
+	def keys(self) -> Generator[str, None, None]:
+		...
+
+	def values(self) -> Generator[Item[DataType], None, None]:
 		...
 
 	def change_value(self, identifier: Union[str, Item[DataType]], value: float) -> Item[DataType]:
@@ -56,7 +82,7 @@ class KeyedPQ(Generic[DataType]):
 	def pop(self) -> Tuple[str, float, DataType]:
 		...
 
-	def ordered_iter(self) -> Iterator[Item[DataType]]:
+	def ordered_iter(self) -> Generator[Item[DataType], None, None]:
 		...
 
 	def _export(self) -> List[float]:

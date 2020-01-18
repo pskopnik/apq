@@ -194,6 +194,9 @@ cdef class KeyedPQ:
 		else:
 			return True
 
+	def __iter__(self):
+		return self.values()
+
 	def __getitem__(self, object identifier):
 		cdef Entry* e = self._entry_from_identifier(identifier)
 		return Item.from_pointer(&self._heap, e)
@@ -202,6 +205,48 @@ cdef class KeyedPQ:
 		cdef Entry* e = self._entry_from_identifier(identifier)
 		self._heap.remove(e.index)
 		self._lookup_map.erase(e.key)
+
+	def __eq__(self, object other):
+		cdef KeyedPQ otherPQ
+		if isinstance(other, KeyedPQ):
+			otherPQ = <KeyedPQ>other
+
+			return &otherPQ._heap == &self._heap
+
+		return NotImplemented
+
+	def __ne__(self, object other):
+		cdef object res = self.__eq__(other)
+		if res is NotImplemented:
+			return NotImplemented
+		return not res
+
+	def get(self, object identifier, object default=None):
+		cdef Entry* e
+		try:
+			e = self._entry_from_identifier(identifier)
+		except:
+			return default
+		else:
+			return Item.from_pointer(&self._heap, e)
+
+	def keys(self):
+		cdef HeapEntry entry
+		for entry in self._heap:
+			yield entry.getData().key.decode('utf8')
+
+	def items(self):
+		cdef HeapEntry entry
+		for entry in self._heap:
+			yield (
+				entry.getData().key.decode('utf8'),
+				Item.from_pointer(&self._heap, entry.getData()),
+			)
+
+	def values(self):
+		cdef HeapEntry entry
+		for entry in self._heap:
+			yield Item.from_pointer(&self._heap, entry.getData())
 
 	def add(self, object key, double value, object data):
 		cdef Entry e
