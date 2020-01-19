@@ -314,14 +314,20 @@ protected:
 	}
 
 	void buildHeap() {
-		if (container.size() < 2)
-			return;
+		if (container.size() > 1) {
+			// starts at the index i with at least one child; iPlusOne = i + 1
+			for (size_type iPlusOne = (container.size() - 2) / 2 + 1; iPlusOne > 0; --iPlusOne) {
+				const size_type i = iPlusOne - 1;
+				value_type value = std::move(container[i]);
+				siftDown(i, std::move(value));
+			}
+		} else if (container.size() == 1) {
+			setIndex(container[0], 0);
+		}
 
-		// starts at the index i with at least one child; iPlusOne = i + 1
-		for (size_type iPlusOne = (container.size() - 2) / 2 + 1; iPlusOne > 0; --iPlusOne) {
-			const size_type i = iPlusOne - 1;
-			value_type value = std::move(container[i]);
-			siftDown(i, std::move(value));
+		// set indices for values not explicitly sifted down
+		for (size_type i = (container.size() - 2) / 2 + 1; i < container.size(); ++i) {
+			setIndex(container[i], i);
 		}
 	}
 
