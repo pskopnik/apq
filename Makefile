@@ -1,5 +1,9 @@
 PIPENV := $(shell which pipenv)
-PYTHON := $(shell $(PIPENV) --py)
+ifneq ($(PIPENV),)
+	PYTHON := $(shell $(PIPENV) --py)
+else
+	PYTHON := $(shell which python)
+endif
 
 SRC_DIRS := ./
 CYTHON_SRCS := $(shell find $(SRC_DIRS) -name "*.pyx")
@@ -31,11 +35,15 @@ build-dev: $(EXTENSION_LIBRARY)
 all: $(EXTENSION_LIBRARY)
 
 test: $(EXTENSION_LIBRARY)
-	$(PIPENV) run mypy --strict tests
+ifeq ($(NO_MYPY),)
+		$(PIPENV) run mypy --strict tests
+endif
 	$(PIPENV) run python -m unittest tests/test.py $(TEST_FLAGS)
 
 bench-basic: $(EXTENSION_LIBRARY)
-	$(PIPENV) run mypy --strict bench
+ifeq ($(NO_MYPY),)
+		$(PIPENV) run mypy --strict bench
+endif
 	$(PIPENV) run python -m bench.basic
 
 build-dist:
