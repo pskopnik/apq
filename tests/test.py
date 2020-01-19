@@ -232,10 +232,29 @@ class MappingStyleInterfaceTest(unittest.TestCase):
 		self.assertTrue(self.pq != 4.0)
 		self.assertFalse(self.pq == 4.0)
 
-	def test_get_item_default(self) -> None:
+	def test_get_item_default_non_existing(self) -> None:
 		self.assertIsNone(self.pq.get('a'))
 		self.assertIsNone(self.pq.get('a', default=None))
 		self.assertEqual(self.pq.get('a', default=4.0), 4.0)
+
+	def test_get_item_default_existing(self) -> None:
+		dummy = DummyClass()
+		self.pq.add('a', 1.0, dummy)
+
+		item1 = self.pq.get('a')
+		self.assertIsNotNone(item1)
+		self.assertIsInstance(item1, Item) # Item[DummyClass]
+		self.assertIs(typing.cast("Item[DummyClass]", item1).data, dummy)
+
+		item2 = self.pq.get('a', default=None)
+		self.assertIsNotNone(item2)
+		self.assertIsInstance(item2, Item) # Item[DummyClass]
+		self.assertIs(typing.cast("Item[DummyClass]", item2).data, dummy)
+
+		item3 = self.pq.get('a', default=4.0)
+		self.assertNotEqual(item3, 4.0)
+		self.assertIsInstance(item3, Item) # Item[DummyClass]
+		self.assertIs(typing.cast("Item[DummyClass]", item3).data, dummy)
 
 	def test_collection_property(self) -> None:
 		# Setup
@@ -350,6 +369,34 @@ class InvariantTest(unittest.TestCase):
 	def setUp(self) -> None:
 		self.pq: KeyedPQ[None] = KeyedPQ()
 
+	def _set_pq_from_iterable(self, iterable: typing.Iterable[typing.Tuple[str, float, None]]) -> None:
+		self.pq = KeyedPQ(iterable)
+
+	def test_build_heap_small(self) -> None:
+		# Setup
+
+		# Test
+
+		for entry_num in range(100):
+			self._set_pq_from_iterable(
+				(str(i), random.random(), None) for i in range(entry_num)
+			)
+
+			self.assertTrue(self.pq._verify_invariants())
+			self.assertEqual(len(self.pq), entry_num)
+
+	def test_build_heap(self) -> None:
+		# Setup
+
+		# Test
+
+		self._set_pq_from_iterable(
+			(str(i), random.random(), None) for i in range(self.NUMBER_OF_ENTRIES)
+		)
+
+		self.assertTrue(self.pq._verify_invariants())
+		self.assertEqual(len(self.pq), self.NUMBER_OF_ENTRIES)
+
 	def test_add(self) -> None:
 		# Setup
 
@@ -419,6 +466,9 @@ class InvariantTest(unittest.TestCase):
 class MaxHeapInvariantTest(InvariantTest):
 	def setUp(self) -> None:
 		self.pq: KeyedPQ[None] = KeyedPQ(max_heap=True)
+
+	def _set_pq_from_iterable(self, iterable: typing.Iterable[typing.Tuple[str, float, None]]) -> None:
+		self.pq = KeyedPQ(iterable, max_heap=True)
 
 
 class HeapCompareTest(unittest.TestCase):
@@ -544,7 +594,9 @@ class EndToEndTest(unittest.TestCase):
 	def setUp(self) -> None:
 		self.l: typing.List[float] = []
 		self.pq: KeyedPQ[None] = KeyedPQ()
-		self._sort_l: typing.Callable[[], None] = lambda: self.l.sort()
+
+	def _sort_l(self) -> None:
+		self.l.sort()
 
 	def _set_pq_from_iterable(self, iterable: typing.Iterable[typing.Tuple[str, float, None]]) -> None:
 		self.pq = KeyedPQ(iterable)
@@ -631,7 +683,9 @@ class MaxHeapEndToEndTest(EndToEndTest):
 	def setUp(self) -> None:
 		self.l: typing.List[float] = []
 		self.pq: KeyedPQ[None] = KeyedPQ(max_heap=True)
-		self._sort_l: typing.Callable[[], None] = lambda: self.l.sort(reverse=True)
+
+	def _sort_l(self) -> None:
+		self.l.sort(reverse=True)
 
 	def _set_pq_from_iterable(self, iterable: typing.Iterable[typing.Tuple[str, float, None]]) -> None:
 		self.pq = KeyedPQ(iterable, max_heap=True)
