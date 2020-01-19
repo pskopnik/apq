@@ -1,4 +1,4 @@
-from typing import Any, Generic, Generator, List, Optional, overload, Tuple, TypeVar, Union
+from typing import Any, Generic, Generator, Iterable, List, Optional, overload, Tuple, TypeVar, Union
 
 
 DataType = TypeVar('DataType')
@@ -26,7 +26,12 @@ class Item(Generic[DataType]):
 
 
 class KeyedPQ(Generic[DataType]):
+	@overload
 	def __init__(self, max_heap: bool=False) -> None:
+		...
+
+	@overload
+	def __init__(self, iterable: Iterable[Tuple[str, float, DataType]], max_heap: bool=False) -> None:
 		...
 
 	def __len__(self) -> int:

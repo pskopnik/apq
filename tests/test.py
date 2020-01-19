@@ -12,6 +12,43 @@ class DummyClass(object):
 	pass
 
 
+class InitialisationTest(unittest.TestCase):
+	def test_correct(self) -> None:
+		self.assertEqual(len(KeyedPQ()), 0)
+		self.assertEqual(len(KeyedPQ([])), 0)
+
+		dummy = DummyClass()
+		pq: KeyedPQ[DummyClass] = KeyedPQ([('a', 1.0, dummy)])
+		self.assertEqual(len(pq), 1)
+		item = pq.peek()
+		self.assertEqual(item.key, 'a')
+		self.assertEqual(item.value, 1.0)
+		self.assertIs(item.data, dummy)
+
+	def test_incorrect(self) -> None:
+		with self.assertRaises(TypeError):
+			typing.cast(typing.Any, KeyedPQ)([], [])
+
+		with self.assertRaises(ValueError):
+			KeyedPQ(typing.cast(typing.Any, [tuple()]))
+		with self.assertRaises(ValueError):
+			KeyedPQ(typing.cast(typing.Any, [('a',)]))
+		with self.assertRaises(ValueError):
+			KeyedPQ(typing.cast(typing.Any, [('a', 1.0)]))
+
+		with self.assertRaises(TypeError):
+			KeyedPQ(typing.cast(typing.Any, [(1.0, 1.0, None)]))
+		with self.assertRaises(TypeError):
+			KeyedPQ(typing.cast(typing.Any, [('a', 'a', None)]))
+
+	def test_duplicate_key(self) -> None:
+		with self.assertRaises(KeyError):
+			KeyedPQ([
+				('a', 1.0, None),
+				('a', 3.0, None),
+			])
+
+
 class KeyTest(unittest.TestCase):
 	def setUp(self) -> None:
 		self.pq: KeyedPQ[None] = KeyedPQ()
@@ -509,6 +546,29 @@ class EndToEndTest(unittest.TestCase):
 		self.pq: KeyedPQ[None] = KeyedPQ()
 		self._sort_l: typing.Callable[[], None] = lambda: self.l.sort()
 
+	def _set_pq_from_iterable(self, iterable: typing.Iterable[typing.Tuple[str, float, None]]) -> None:
+		self.pq = KeyedPQ(iterable)
+
+	def test_build_heap(self) -> None:
+		# Setup
+
+		def iterable() -> typing.Iterable[typing.Tuple[str, float, None]]:
+			for i in range(10000):
+				val = random.random()
+				self.l.append(val)
+				yield (str(i), val, None)
+
+		self._set_pq_from_iterable(iterable())
+
+		self._sort_l()
+
+		# Test
+
+		self.assertEqual(len(self.pq), len(self.l))
+
+		for i, val in enumerate(addressable_pq_pop_all(self.pq)):
+			self.assertEqual(val, self.l[i])
+
 	def test_pop(self) -> None:
 		# Setup
 
@@ -520,6 +580,8 @@ class EndToEndTest(unittest.TestCase):
 		self._sort_l()
 
 		# Test
+
+		self.assertEqual(len(self.pq), len(self.l))
 
 		for i, val in enumerate(addressable_pq_pop_all(self.pq)):
 			self.assertEqual(val, self.l[i])
@@ -540,6 +602,8 @@ class EndToEndTest(unittest.TestCase):
 
 		# Test
 
+		self.assertEqual(len(self.pq), len(self.l))
+
 		for i, val in enumerate(addressable_pq_pop_all(self.pq)):
 			self.assertEqual(val, self.l[i])
 
@@ -555,10 +619,12 @@ class EndToEndTest(unittest.TestCase):
 
 		# Test
 
+		self.assertEqual(len(self.pq), len(self.l))
+
 		for i, it in enumerate(self.pq.ordered_iter()):
 			self.assertEqual(it.value, self.l[i])
 
-		self.assertEqual(len(self.pq), 10000)
+		self.assertEqual(len(self.pq), len(self.l))
 
 
 class MaxHeapEndToEndTest(EndToEndTest):
@@ -566,6 +632,9 @@ class MaxHeapEndToEndTest(EndToEndTest):
 		self.l: typing.List[float] = []
 		self.pq: KeyedPQ[None] = KeyedPQ(max_heap=True)
 		self._sort_l: typing.Callable[[], None] = lambda: self.l.sort(reverse=True)
+
+	def _set_pq_from_iterable(self, iterable: typing.Iterable[typing.Tuple[str, float, None]]) -> None:
+		self.pq = KeyedPQ(iterable, max_heap=True)
 
 
 def list_pop_all(l: typing.List[float]) -> typing.Iterator[float]:

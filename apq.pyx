@@ -74,17 +74,22 @@ cdef extern from "src/binheap.hpp" nogil:
 		ordered_iterable orderedIterable()
 		const_ordered_iterable const_orderedIterable "orderedIterable"()
 
+	cdef cppclass DefaultSetIndex[T=*]:
+		DefaultSetIndex()
+
 	cdef cppclass MinHeapCompare[T]:
-		pass
+		MinHeapCompare()
 
 	cdef cppclass MaxHeapCompare[T]:
-		pass
+		MaxHeapCompare()
 
 	cdef cppclass MinBinHeap[T, Container=*, SetIndex=*](BinHeap[T, Container, MinHeapCompare[T], SetIndex]):
 		MinBinHeap()
+		MinBinHeap(MinHeapCompare[T], SetIndex, Container&)
 
 	cdef cppclass MaxBinHeap[T, Container=*, SetIndex=*](BinHeap[T, Container, MaxHeapCompare[T], SetIndex]):
 		MaxBinHeap()
+		MaxBinHeap(MaxHeapCompare[T], SetIndex, Container&)
 
 	cdef cppclass StandardEntry[T, V=*, ChangeTSTracking=*, SetIndex=*]:
 		ctypedef double value_type
@@ -153,6 +158,18 @@ ctypedef APQPayload[PyObjectWrapper] Entry
 ctypedef StandardEntry[Entry*] HeapEntry
 
 
+cdef extern from "<utility>" namespace "std" nogil:
+	# This declaration allows declaring the specific container type used by
+	# BinHeap as an xvalue. move() is used in the PQ constructor.
+	#
+	# Unfortunately no declaration of std::move is shipped with Cython, though
+	# there exists a workaround shipped in a separate package.
+	#
+	# https://github.com/cython/cython/pull/406
+	# https://github.com/cython/cython/issues/2169
+	cdef vector[HeapEntry] move(vector[HeapEntry])
+
+
 cdef class Item:
 	cdef AnyBinHeap[HeapEntry]* _heap
 	cdef Entry* _e
@@ -202,12 +219,47 @@ cdef class KeyedPQ:
 	cdef unsigned long long int _ts
 	cdef bint _max_heap
 
-	def __cinit__(self, bint max_heap=False):
+	def __cinit__(self, *iterables, bint max_heap=False):
+		cdef vector[HeapEntry] container
+
+		if len(iterables) > 1:
+			raise TypeError("KeyedPQ accepts at most 1 non-keyword argument, {} given".format(len(iterables)))
+
+		if len(iterables) == 1:
+			for element in iterables[0]:
+				self._allocate_and_push(container, element)
+
 		self._max_heap = max_heap
 		if max_heap:
-			self._heap = MaxBinHeap[HeapEntry]()
+			self._heap = MaxBinHeap[HeapEntry, vector[HeapEntry], DefaultSetIndex[HeapEntry]](
+				MaxHeapCompare[HeapEntry](), DefaultSetIndex[HeapEntry](), move(container)
+			)
 		else:
-			self._heap = MinBinHeap[HeapEntry]()
+			self._heap = MinBinHeap[HeapEntry, vector[HeapEntry], DefaultSetIndex[HeapEntry]](
+				MinHeapCompare[HeapEntry](), DefaultSetIndex[HeapEntry](), move(container)
+			)
+
+	cdef _allocate_and_push(self, vector[HeapEntry]& container, object element):
+		if len(element) != 3:
+			raise ValueError("element in initialisation iterable must have length 3, has length {}".format(len(element)))
+
+		cdef Entry e
+		e.key = stringify(element[0])
+
+		if self._lookup_map.count(e.key) > 0:
+			raise KeyError("Duplicate key: key already exists in PQ")
+
+		cdef double value = <double?> element[1]
+		e.data.obj = element[2]
+
+		self._lookup_map[e.key] = e
+		cdef Entry* e_pointer = &self._lookup_map[e.key]
+
+		container.push_back(HeapEntry(
+			value,
+			e_pointer,
+			preincrement(self._ts),
+		))
 
 	def __len__(self):
 		return self._heap.size()
