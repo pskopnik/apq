@@ -107,7 +107,33 @@ cdef extern from "src/binheap.hpp" nogil:
 		bint minHeapCompare(entry_type&)
 		bint maxHeapCompare(entry_type&)
 
-cdef extern from "src/_apq_helpers.cpp" nogil:
+
+cdef extern from * nogil:
+	"""
+	#include <cstddef>
+	#include <string>
+
+	template<class T>
+	class APQPayload {
+	public:
+		std::size_t index;
+		std::string key;
+		T data;
+
+		void setIndex(std::size_t index) {
+			this->index = index;
+		}
+	};
+
+	template<class T>
+	class DefaultSetIndex<APQPayload<T>*> {
+	public:
+		void operator()(APQPayload<T>* el, std::size_t index) const {
+			el->setIndex(index);
+		}
+	};
+	"""
+
 	cdef cppclass APQPayload[T]:
 		size_t index
 		string key

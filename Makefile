@@ -14,7 +14,7 @@ endif
 apq.cpp apq.html: apq.pyx
 	$(PIPENV) run cython -a --cplus -Werror -Wextra apq.pyx
 
-$(LIB_DIR)/apq$(EXTENSION_SUFFIX): apq.cpp src/_apq_helpers.cpp src/binheap.hpp
+$(LIB_DIR)/apq$(EXTENSION_SUFFIX): apq.cpp src/binheap.hpp
 	$(PIPENV) run python setup.py build_ext
 
 $(EXTENSION_LIBRARY): $(LIB_DIR)/$(EXTENSION_LIBRARY)
