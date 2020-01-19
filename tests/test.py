@@ -278,7 +278,7 @@ class MappingStyleInterfaceTest(unittest.TestCase):
 
 		self.assertEqual(len(s), 0)
 
-	def test_iterable_order(self,) -> None:
+	def test_iterable_order(self) -> None:
 		# Setup
 
 		for i in range(1000):
@@ -309,6 +309,26 @@ class MappingStyleInterfaceTest(unittest.TestCase):
 			self.assertIs(value.data, self.pq[key].data)
 			self.assertIs(value.data, item_value.data)
 			self.assertIs(value.data, iter_value.data)
+
+	def test_clear(self) -> None:
+		# Setup
+
+		l: typing.List[typing.Tuple[str, Item[DummyClass]]] = []
+
+		for i in range(1000):
+			item = self.pq.add(str(i), random.random(), DummyClass())
+			l.append((str(i), item))
+
+		# Test
+
+		self.assertEqual(len(self.pq), 1000)
+
+		self.pq.clear()
+
+		self.assertEqual(len(self.pq), 0)
+		for key, item in l:
+			self.assertFalse(key in self.pq)
+			self.assertFalse(item in self.pq)
 
 
 class ItemTest(unittest.TestCase):

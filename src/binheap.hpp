@@ -395,6 +395,10 @@ public:
 		buildHeap();
 	}
 
+	void clear() {
+		container.clear();
+	}
+
 	void push(const value_type& value) {
 		container.push_back(value);
 		fixPushed();
@@ -707,6 +711,8 @@ public:
 
 	virtual ~BinHeapInterface() {};
 
+	virtual void clear() = 0;
+
 	virtual void push(const value_type& value) = 0;
 	virtual void push(value_type&& value) = 0;
 
@@ -855,6 +861,8 @@ public:
 
 	BinHeapForwarder(const heap_type& heap) : heap(heap) {}
 	BinHeapForwarder(heap_type&& heap) : heap(std::move(heap)) {}
+
+	void clear() override { heap.clear(); }
 
 	void push(const value_type& value) override { heap.push(value); }
 	void push(value_type&& value) override { heap.push(std::move(value)); }
@@ -1008,6 +1016,8 @@ public:
 		heapPtr = std::make_unique<BinHeapForwarder<T, typename PureHeap::container_type, typename PureHeap::value_compare, typename PureHeap::value_set_index>>(std::forward<PureHeap>(h));
 		return *this;
 	}
+
+	void clear() { heapPtr->clear(); }
 
 	void push(const value_type& value) { heapPtr->push(value); }
 	void push(value_type&& value) { heapPtr->push(std::move(value)); }

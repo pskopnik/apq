@@ -63,6 +63,9 @@ class KeyedPQ(Generic[DataType]):
 	def get(self, identifier: Union[str, Item[DataType]], default: Union[Item[DataType], T]) -> Union[Item[DataType], T]:
 		...
 
+	def clear(self) -> None:
+		...
+
 	def add(self, key: str, value: float, data: DataType) -> Item[DataType]:
 		...
 

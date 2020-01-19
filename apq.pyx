@@ -53,6 +53,7 @@ cdef extern from "src/binheap.hpp" nogil:
 		AnyBinHeap(BinHeap[T]) except +
 		AnyBinHeap& operator=(BinHeap[T]) except +
 
+		void clear()
 		void push(value_type&) except +
 		void fix(size_type)
 		void fix(iterator)
@@ -325,6 +326,10 @@ cdef class KeyedPQ:
 		cdef HeapEntry entry
 		for entry in self._heap:
 			yield Item.from_pointer(&self._heap, entry.getData())
+
+	def clear(self):
+		self._heap.clear()
+		self._lookup_map.clear()
 
 	def add(self, object key, double value, object data):
 		cdef Entry e
