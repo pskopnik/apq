@@ -36,13 +36,13 @@ all: $(EXTENSION_LIBRARY)
 
 test: $(EXTENSION_LIBRARY)
 ifeq ($(NO_MYPY),)
-		$(PIPENV) run mypy --strict tests
+		$(PIPENV) run mypy tests
 endif
 	$(PIPENV) run pytest tests $(TEST_FLAGS)
 
 bench-basic: $(EXTENSION_LIBRARY)
 ifeq ($(NO_MYPY),)
-		$(PIPENV) run mypy --strict bench
+		$(PIPENV) run mypy bench
 endif
 	$(PIPENV) run python -m bench.basic
 
