@@ -96,7 +96,7 @@ with open('README.md') as file:
 
 setup(
 	name = 'apq',
-	version = '0.6.1.dev1',
+	version = '0.6.1',
 	license = 'MIT',
 	author = 'Paul Skopnik',
 	author_email = 'paul@skopnik.me',
