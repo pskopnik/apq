@@ -10,7 +10,7 @@ from libcpp.limits cimport numeric_limits
 from cython.operator cimport dereference, preincrement
 
 
-cdef extern from "src/binheap.hpp" nogil:
+cdef extern from "cpp/binheap.hpp" nogil:
 	cdef cppclass BinHeap[T, Container=*, Compare=*, SetIndex=*]:
 		ctypedef T value_type
 		ctypedef Container container_type

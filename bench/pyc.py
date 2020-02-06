@@ -1,6 +1,6 @@
 from . import bench, BenchTimer, main_bench_registered
 from .utils import StringSource
-from py.keyedpq_c import PyKeyedPQC
+from .py.keyedpq_c import PyKeyedPQC
 from random import random as random_01
 
 

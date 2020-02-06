@@ -1,10 +1,11 @@
-.mypy_cache/*
-apq.cpp
-apq.html
+.mypy_cache/
 
-build/*
-cython_debug/*
-apq.egg-info
+pyx_src/apq.cpp
+pyx_src/apq.html
+
+build/
+cython_debug/
+py_src/apq.egg-info
 apq.*.so
 
-dist/*
+dist/

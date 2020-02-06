@@ -3,7 +3,7 @@ from setuptools.extension import Extension
 from Cython.Build import cythonize
 
 extensions = [
-	Extension('apq', ['apq.pyx'],
+	Extension('apq', ['pyx_src/apq.pyx'],
 		extra_compile_args = ['-std=c++14'],
 		extra_link_args = ['-std=c++14'],
 	),
@@ -24,6 +24,7 @@ setup(
 	long_description_content_type = 'text/markdown',
 	keywords = 'queue priorityqueue addressable datastructures mapping',
 	packages = ['apq'],
+	package_dir={'': 'py_src'},
 	package_data = {'apq': ['*.pyi', 'py.typed']},
 	zip_safe = False,
 	python_requires=">=3.6, <4",

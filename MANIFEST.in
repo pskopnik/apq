@@ -1,0 +1,3 @@
+include pyx_src/cpp/binheap.hpp
+include pyx_src/apq.pyx
+include pyx_src/apq.cpp
