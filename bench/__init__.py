@@ -238,6 +238,7 @@ class BenchmarkRegistry(object):
 
 		if only:
 			self._specifications = [spec]
+			self._only_active = True
 		elif not self._only_active:
 			self._specifications.append(spec)
 
