@@ -20,11 +20,7 @@ ifneq ($(TEST_PATTERN),)
 	TEST_FLAGS := -k $(TEST_PATTERN)
 endif
 
-$(SRC_DIRS)/%.cpp $(SRC_DIRS)/%.html: $(SRC_DIRS)/%.pyx
-	# Does not generate the same file as setup.py build_ext does: Cython meta data is missing.
-	$(PIPENV) run cython -a --cplus -Werror -Wextra $<
-
-$(LIB_DIR)/apq$(EXTENSION_SUFFIX): $(CYTHON_CPPS) $(SRC_DIRS)/cpp/binheap.hpp
+$(LIB_DIR)/apq$(EXTENSION_SUFFIX) $(CYTHON_CPPS) $(CYTHON_HTMLS): $(CYTHON_SRCS) $(SRC_DIRS)/cpp/binheap.hpp
 	$(PIPENV) run python setup.py build_ext --transpile-cython
 
 $(EXTENSION_LIBRARY): $(LIB_DIR)/$(EXTENSION_LIBRARY)
