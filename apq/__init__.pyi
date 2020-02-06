@@ -1,11 +1,11 @@
 from typing import Any, Generic, Generator, Iterable, List, Optional, overload, Tuple, TypeVar, Union
 
 
-DataType = TypeVar('DataType')
-T = TypeVar('T')
+_DT = TypeVar('_DT') # data type
+_T = TypeVar('_T') # any type
 
 
-class Item(Generic[DataType]):
+class Item(Generic[_DT]):
 	@property
 	def key(self) -> str:
 		...
@@ -15,7 +15,7 @@ class Item(Generic[DataType]):
 		...
 
 	@property
-	def data(self) -> DataType:
+	def data(self) -> _DT:
 		...
 
 	def __eq__(self, other: Any) -> bool:
@@ -25,28 +25,28 @@ class Item(Generic[DataType]):
 		...
 
 
-class KeyedPQ(Generic[DataType]):
+class KeyedPQ(Generic[_DT]):
 	@overload
 	def __init__(self, max_heap: bool=False) -> None:
 		...
 
 	@overload
-	def __init__(self, iterable: Iterable[Tuple[str, float, DataType]], max_heap: bool=False) -> None:
+	def __init__(self, iterable: Iterable[Tuple[str, float, _DT]], max_heap: bool=False) -> None:
 		...
 
 	def __len__(self) -> int:
 		...
 
-	def __contains__(self, identifier: Union[str, Item[DataType]]) -> bool:
+	def __contains__(self, identifier: Union[str, Item[_DT]]) -> bool:
 		...
 
-	def __iter__(self) -> Generator[Item[DataType], None, None]:
+	def __iter__(self) -> Generator[Item[_DT], None, None]:
 		...
 
-	def __getitem__(self, identifier: Union[str, Item[DataType]]) -> Item[DataType]:
+	def __getitem__(self, identifier: Union[str, Item[_DT]]) -> Item[_DT]:
 		...
 
-	def __delitem__(self, identifier: Union[str, Item[DataType]]) -> None:
+	def __delitem__(self, identifier: Union[str, Item[_DT]]) -> None:
 		...
 
 	def __eq__(self, other: Any) -> bool:
@@ -56,41 +56,41 @@ class KeyedPQ(Generic[DataType]):
 		...
 
 	@overload
-	def get(self, identifier: Union[str, Item[DataType]]) -> Optional[Item[DataType]]:
+	def get(self, identifier: Union[str, Item[_DT]]) -> Optional[Item[_DT]]:
 		...
 
 	@overload
-	def get(self, identifier: Union[str, Item[DataType]], default: Union[Item[DataType], T]) -> Union[Item[DataType], T]:
+	def get(self, identifier: Union[str, Item[_DT]], default: Union[Item[_DT], _T]) -> Union[Item[_DT], _T]:
 		...
 
 	def clear(self) -> None:
 		...
 
-	def add(self, key: str, value: float, data: DataType) -> Item[DataType]:
+	def add(self, key: str, value: float, data: _DT) -> Item[_DT]:
 		...
 
-	def items(self) -> Generator[Tuple[str, Item[DataType]], None, None]:
+	def items(self) -> Generator[Tuple[str, Item[_DT]], None, None]:
 		...
 
 	def keys(self) -> Generator[str, None, None]:
 		...
 
-	def values(self) -> Generator[Item[DataType], None, None]:
+	def values(self) -> Generator[Item[_DT], None, None]:
 		...
 
-	def change_value(self, identifier: Union[str, Item[DataType]], value: float) -> Item[DataType]:
+	def change_value(self, identifier: Union[str, Item[_DT]], value: float) -> Item[_DT]:
 		...
 
-	def add_or_change_value(self, key: str, value: float, data: DataType) -> Item[DataType]:
+	def add_or_change_value(self, key: str, value: float, data: _DT) -> Item[_DT]:
 		...
 
-	def peek(self) -> Item[DataType]:
+	def peek(self) -> Item[_DT]:
 		...
 
-	def pop(self) -> Tuple[str, float, DataType]:
+	def pop(self) -> Tuple[str, float, _DT]:
 		...
 
-	def ordered_iter(self) -> Generator[Item[DataType], None, None]:
+	def ordered_iter(self) -> Generator[Item[_DT], None, None]:
 		...
 
 	def _export(self) -> List[float]:

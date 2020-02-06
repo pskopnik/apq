@@ -4,28 +4,28 @@ import heapq
 import math
 
 
-KeyType = TypeVar('KeyType')
-DataType = TypeVar('DataType')
-KeyTypeInner = TypeVar('KeyTypeInner')
-DataTypeInner = TypeVar('DataTypeInner')
+_KT = TypeVar('_KT') # key type
+_DT = TypeVar('_DT') # data type
+_KT_inner = TypeVar('_KT_inner') # alternative key type for inner definitions
+_DT_inner = TypeVar('_DT_inner') # alternative data type for inner definitions
 
 
-class PyKeyedPQA(Generic[KeyType, DataType]):
+class PyKeyedPQA(Generic[_KT, _DT]):
 
 	@dataclass(order=True)
-	class _Entry(Generic[KeyTypeInner, DataTypeInner]):
+	class _Entry(Generic[_KT_inner, _DT_inner]):
 		value: float = field(init=True, compare=True)
 		change_index: int = field(init=True, compare=True)
-		key: KeyTypeInner = field(init=True, compare=False)
-		data: DataTypeInner = field(init=True, compare=False)
+		key: _KT_inner = field(init=True, compare=False)
+		data: _DT_inner = field(init=True, compare=False)
 
 
-	class Item(Generic[KeyTypeInner, DataTypeInner]):
-		def __init__(self, entry: 'PyKeyedPQA._Entry[KeyTypeInner, DataTypeInner]') -> None:
-			self._entry: PyKeyedPQA._Entry[KeyTypeInner, DataTypeInner] = entry
+	class Item(Generic[_KT_inner, _DT_inner]):
+		def __init__(self, entry: 'PyKeyedPQA._Entry[_KT_inner, _DT_inner]') -> None:
+			self._entry: PyKeyedPQA._Entry[_KT_inner, _DT_inner] = entry
 
 		@property
-		def key(self) -> KeyTypeInner:
+		def key(self) -> _KT_inner:
 			return self._entry.key
 
 		@property
@@ -33,15 +33,15 @@ class PyKeyedPQA(Generic[KeyType, DataType]):
 			return self._entry.value
 
 		@property
-		def data(self) -> DataTypeInner:
+		def data(self) -> _DT_inner:
 			return self._entry.data
 
 	def __init__(self) -> None:
-		self._heap: List[PyKeyedPQA._Entry[KeyType, DataType]] = []
+		self._heap: List[PyKeyedPQA._Entry[_KT, _DT]] = []
 		self._change_index = 1
-		self._lookup_dict: Dict[KeyType, PyKeyedPQA._Entry[KeyType, DataType]] = {}
+		self._lookup_dict: Dict[_KT, PyKeyedPQA._Entry[_KT, _DT]] = {}
 
-	def _entry_from_identifier(self, identifier: Union[KeyType, 'PyKeyedPQA.Item[KeyType, DataType]']) -> 'PyKeyedPQA._Entry[KeyType, DataType]':
+	def _entry_from_identifier(self, identifier: Union[_KT, 'PyKeyedPQA.Item[_KT, _DT]']) -> 'PyKeyedPQA._Entry[_KT, _DT]':
 		if isinstance(identifier, PyKeyedPQA.Item):
 			return identifier._entry
 		else:
@@ -50,14 +50,14 @@ class PyKeyedPQA(Generic[KeyType, DataType]):
 	def __len__(self) -> int:
 		return len(self._heap)
 
-	def __contains__(self, key: KeyType) -> bool:
+	def __contains__(self, key: _KT) -> bool:
 		return key in self._lookup_dict
 
-	def __getitem__(self, key: KeyType) -> 'PyKeyedPQA.Item[KeyType, DataType]':
+	def __getitem__(self, key: _KT) -> 'PyKeyedPQA.Item[_KT, _DT]':
 		entry = self._lookup_dict[key]
 		return PyKeyedPQA.Item(entry)
 
-	def __delitem__(self, identifier: Union[KeyType, 'PyKeyedPQA.Item[KeyType, DataType]']) -> None:
+	def __delitem__(self, identifier: Union[_KT, 'PyKeyedPQA.Item[_KT, _DT]']) -> None:
 		entry = self._entry_from_identifier(identifier)
 		entry.value, entry.change_index = -math.inf, 0
 		# impl A
@@ -66,24 +66,24 @@ class PyKeyedPQA(Generic[KeyType, DataType]):
 		heapq.heappop(self._heap)
 		del self._lookup_dict[entry.key]
 
-	def add(self, key: KeyType, value: float, data: DataType) -> 'PyKeyedPQA.Item[KeyType, DataType]':
+	def add(self, key: _KT, value: float, data: _DT) -> 'PyKeyedPQA.Item[_KT, _DT]':
 		entry = PyKeyedPQA._Entry(value, self._change_index, key, data)
 		self._change_index += 1
 		heapq.heappush(self._heap, entry)
 		self._lookup_dict[key] = entry
 		return PyKeyedPQA.Item(entry)
 
-	def change_value(self, identifier: Union[KeyType, 'PyKeyedPQA.Item[KeyType, DataType]'], value: float) -> None:
+	def change_value(self, identifier: Union[_KT, 'PyKeyedPQA.Item[_KT, _DT]'], value: float) -> None:
 		entry = self._entry_from_identifier(identifier)
 		self._change_value(entry, value)
 
-	def _change_value(self, entry: 'PyKeyedPQA._Entry[KeyType, DataType]', value: float) -> None:
+	def _change_value(self, entry: 'PyKeyedPQA._Entry[_KT, _DT]', value: float) -> None:
 		entry.value, entry.change_index = value, self._change_index
 		self._change_index += 1
 		# impl A
 		heapq.heapify(self._heap)
 
-	def add_or_change(self, key: KeyType, value: float, data: DataType) -> 'PyKeyedPQA.Item[KeyType, DataType]':
+	def add_or_change(self, key: _KT, value: float, data: _DT) -> 'PyKeyedPQA.Item[_KT, _DT]':
 		try:
 			entry = self._lookup_dict[key]
 			self._change_value(entry, value)
@@ -91,11 +91,11 @@ class PyKeyedPQA(Generic[KeyType, DataType]):
 		except KeyError:
 			return self.add(key, value, data)
 
-	def peek(self) -> 'PyKeyedPQA.Item[KeyType, DataType]':
+	def peek(self) -> 'PyKeyedPQA.Item[_KT, _DT]':
 		entry = self._heap[0]
 		return PyKeyedPQA.Item(entry)
 
-	def pop(self) -> Tuple[KeyType, float, DataType]:
+	def pop(self) -> Tuple[_KT, float, _DT]:
 		entry = heapq.heappop(self._heap)
 		del self._lookup_dict[entry.key]
 		return entry.key, entry.value, entry.data

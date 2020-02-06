@@ -1,8 +1,8 @@
 from typing import Generic, Iterable, List, Tuple, TypeVar, Union
 
 
-KeyType = TypeVar('KeyType')
-DataType = TypeVar('DataType')
+_KT = TypeVar('_KT') # key type
+_DT = TypeVar('_DT') # data type
 
 
 class pqdict(Generic[KeyType, DataType]):
