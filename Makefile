@@ -38,7 +38,7 @@ test: $(EXTENSION_LIBRARY)
 ifeq ($(NO_MYPY),)
 		$(PIPENV) run mypy --strict tests
 endif
-	$(PIPENV) run python -m unittest tests/test.py $(TEST_FLAGS)
+	$(PIPENV) run pytest tests $(TEST_FLAGS)
 
 bench-basic: $(EXTENSION_LIBRARY)
 ifeq ($(NO_MYPY),)
