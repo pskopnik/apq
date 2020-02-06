@@ -25,7 +25,7 @@ $(SRC_DIRS)/%.cpp $(SRC_DIRS)/%.html: $(SRC_DIRS)/%.pyx
 	$(PIPENV) run cython -a --cplus -Werror -Wextra $<
 
 $(LIB_DIR)/apq$(EXTENSION_SUFFIX): $(CYTHON_CPPS) $(SRC_DIRS)/cpp/binheap.hpp
-	$(PIPENV) run python setup.py build_ext
+	$(PIPENV) run python setup.py build_ext --transpile-cython
 
 $(EXTENSION_LIBRARY): $(LIB_DIR)/$(EXTENSION_LIBRARY)
 	cp $< $@
@@ -47,7 +47,7 @@ endif
 	$(PIPENV) run python -m bench.basic
 
 build-dist:
-	$(PIPENV) run python setup.py sdist bdist_wheel
+	$(PIPENV) run python setup.py sdist bdist_wheel --transpile-cython
 
 clean:
 	$(RM) -f $(CYTHON_CPPS) $(CYTHON_HTMLS)
