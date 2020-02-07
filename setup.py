@@ -96,7 +96,7 @@ with open('README.md') as file:
 
 setup(
 	name = 'apq',
-	version = '0.6.1',
+	version = '0.6.2',
 	license = 'MIT',
 	author = 'Paul Skopnik',
 	author_email = 'paul@skopnik.me',
@@ -113,8 +113,8 @@ setup(
 	ext_modules = prepare_extensions(extensions),
 	classifiers = [
 		'Development Status :: 4 - Beta',
-		'Target Audience :: Developers',
-		'Target Audience :: Science/Research',
+		'Intended Audience :: Developers',
+		'Intended Audience :: Science/Research',
 		'License :: OSI Approved :: MIT License',
 		'Programming Language :: Cython',
 		'Programming Language :: Python',
