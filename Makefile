@@ -1,20 +1,20 @@
-PIPENV := $(shell which pipenv)
+PIPENV ?= $(shell which pipenv)
 ifneq ($(PIPENV),)
-	PYTHON := $(shell $(PIPENV) --py)
+	PYTHON ?= $(shell $(PIPENV) --py)
 else
-	PYTHON := $(shell which python)
+	PYTHON ?= $(shell which python)
 endif
 
-SRC_DIRS := ./pyx_src
-CYTHON_SRCS := $(shell find $(SRC_DIRS) -name "*.pyx")
-CYTHON_CPPS := $(CYTHON_SRCS:.pyx=.cpp)
-CYTHON_HTMLS := $(CYTHON_SRCS:.pyx=.html)
+SRC_DIRS ?= ./pyx_src
+CYTHON_SRCS ?= $(shell find $(SRC_DIRS) -name "*.pyx")
+CYTHON_CPPS ?= $(CYTHON_SRCS:.pyx=.cpp)
+CYTHON_HTMLS ?= $(CYTHON_SRCS:.pyx=.html)
 
-EXTENSION_SUFFIX := $(shell $(PYTHON) -c 'import importlib.machinery; print(importlib.machinery.EXTENSION_SUFFIXES[0])')
+EXTENSION_SUFFIX ?= $(shell $(PYTHON) -c 'import importlib.machinery; print(importlib.machinery.EXTENSION_SUFFIXES[0])')
 # BUILD_SUFFIX is $(OS)-$(MACHINE)-$(MAJOR_PYTHON_VERSION), e.g. linux-x86_64-3.7
-BUILD_SUFFIX := $(shell $(PYTHON) -c 'import platform; print(platform.system().lower(), platform.machine().lower(), ".".join(platform.python_version_tuple()[0:2]), sep="-")')
-LIB_DIR := ./build/lib.$(BUILD_SUFFIX)
-EXTENSION_LIBRARY := apq$(EXTENSION_SUFFIX)
+BUILD_SUFFIX ?= $(shell $(PYTHON) -c 'import platform; print(platform.system().lower(), platform.machine().lower(), ".".join(platform.python_version_tuple()[0:2]), sep="-")')
+LIB_DIR ?= ./build/lib.$(BUILD_SUFFIX)
+EXTENSION_LIBRARY ?= apq$(EXTENSION_SUFFIX)
 
 ifneq ($(TEST_PATTERN),)
 	TEST_FLAGS := -k $(TEST_PATTERN)
