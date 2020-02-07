@@ -5,7 +5,7 @@ import random
 import typing
 import unittest
 
-from apq import KeyedPQ, Item
+from apq import KeyedPQ, KeyedItem
 
 
 class DummyClass(object):
@@ -53,7 +53,7 @@ class KeyTest(unittest.TestCase):
 	def setUp(self) -> None:
 		self.pq: KeyedPQ[None] = KeyedPQ()
 
-	def _assert_contained(self, identifier: "typing.Union[str, Item[None]]", key: "typing.Optional[str]"=None) -> None:
+	def _assert_contained(self, identifier: "typing.Union[str, KeyedItem[None]]", key: "typing.Optional[str]"=None) -> None:
 		key_str: str
 		if key is not None:
 			key_str = key
@@ -67,9 +67,9 @@ class KeyTest(unittest.TestCase):
 		self.assertEqual(self.pq[identifier].key, key_str)
 		item = self.pq.get(identifier)
 		self.assertIsNotNone(item)
-		self.assertEqual(typing.cast("Item[None]", item).key, key_str)
+		self.assertEqual(typing.cast("KeyedItem[None]", item).key, key_str)
 
-	def _assert_not_contained(self, identifier: "typing.Union[str, Item[None]]") -> None:
+	def _assert_not_contained(self, identifier: "typing.Union[str, KeyedItem[None]]") -> None:
 		self.assertFalse(identifier in self.pq)
 		with self.assertRaises(KeyError):
 			item = self.pq[identifier]
@@ -100,7 +100,7 @@ class KeyTest(unittest.TestCase):
 		self._assert_contained(item, key='a')
 
 	def test_unknown_item_key(self) -> None:
-		item: Item[None] = Item()
+		item: KeyedItem[None] = KeyedItem()
 
 		self._assert_not_contained(item)
 
@@ -243,18 +243,18 @@ class MappingStyleInterfaceTest(unittest.TestCase):
 
 		item1 = self.pq.get('a')
 		self.assertIsNotNone(item1)
-		self.assertIsInstance(item1, Item) # Item[DummyClass]
-		self.assertIs(typing.cast("Item[DummyClass]", item1).data, dummy)
+		self.assertIsInstance(item1, KeyedItem) # KeyedItem[DummyClass]
+		self.assertIs(typing.cast("KeyedItem[DummyClass]", item1).data, dummy)
 
 		item2 = self.pq.get('a', default=None)
 		self.assertIsNotNone(item2)
-		self.assertIsInstance(item2, Item) # Item[DummyClass]
-		self.assertIs(typing.cast("Item[DummyClass]", item2).data, dummy)
+		self.assertIsInstance(item2, KeyedItem) # KeyedItem[DummyClass]
+		self.assertIs(typing.cast("KeyedItem[DummyClass]", item2).data, dummy)
 
 		item3 = self.pq.get('a', default=4.0)
 		self.assertNotEqual(item3, 4.0)
-		self.assertIsInstance(item3, Item) # Item[DummyClass]
-		self.assertIs(typing.cast("Item[DummyClass]", item3).data, dummy)
+		self.assertIsInstance(item3, KeyedItem) # KeyedItem[DummyClass]
+		self.assertIs(typing.cast("KeyedItem[DummyClass]", item3).data, dummy)
 
 	def test_collection_property(self) -> None:
 		# Setup
@@ -313,7 +313,7 @@ class MappingStyleInterfaceTest(unittest.TestCase):
 	def test_clear(self) -> None:
 		# Setup
 
-		l: typing.List[typing.Tuple[str, Item[DummyClass]]] = []
+		l: typing.List[typing.Tuple[str, KeyedItem[DummyClass]]] = []
 
 		for i in range(1000):
 			item = self.pq.add(str(i), random.random(), DummyClass())

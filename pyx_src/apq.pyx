@@ -171,7 +171,7 @@ cdef extern from "<utility>" namespace "std" nogil:
 	cdef vector[HeapEntry] move(vector[HeapEntry])
 
 
-cdef class Item:
+cdef class KeyedItem:
 	cdef AnyBinHeap[HeapEntry]* _heap
 	cdef Entry* _e
 	cdef unicode _cached_key
@@ -193,9 +193,9 @@ cdef class Item:
 		return self._e.data.obj
 
 	def __eq__(self, object other):
-		cdef Item otherItem
-		if isinstance(other, Item):
-			otherItem = <Item>other
+		cdef KeyedItem otherItem
+		if isinstance(other, KeyedItem):
+			otherItem = <KeyedItem>other
 			return self._heap == otherItem._heap and self._e == otherItem._e
 
 		return NotImplemented
@@ -207,8 +207,8 @@ cdef class Item:
 		return not res
 
 	@staticmethod
-	cdef Item from_pointer(AnyBinHeap[HeapEntry]* heap, Entry* e):
-		i = Item()
+	cdef KeyedItem from_pointer(AnyBinHeap[HeapEntry]* heap, Entry* e):
+		i = KeyedItem()
 		i._heap = heap
 		i._e = e
 		return i
@@ -278,7 +278,7 @@ cdef class KeyedPQ:
 
 	def __getitem__(self, object identifier):
 		cdef Entry* e = self._entry_from_identifier(identifier)
-		return Item.from_pointer(&self._heap, e)
+		return KeyedItem.from_pointer(&self._heap, e)
 
 	def __delitem__(self, object identifier):
 		cdef Entry* e = self._entry_from_identifier(identifier)
@@ -307,7 +307,7 @@ cdef class KeyedPQ:
 		except:
 			return default
 		else:
-			return Item.from_pointer(&self._heap, e)
+			return KeyedItem.from_pointer(&self._heap, e)
 
 	def keys(self):
 		cdef HeapEntry entry
@@ -319,13 +319,13 @@ cdef class KeyedPQ:
 		for entry in self._heap:
 			yield (
 				entry.getData().key.decode('utf8'),
-				Item.from_pointer(&self._heap, entry.getData()),
+				KeyedItem.from_pointer(&self._heap, entry.getData()),
 			)
 
 	def values(self):
 		cdef HeapEntry entry
 		for entry in self._heap:
-			yield Item.from_pointer(&self._heap, entry.getData())
+			yield KeyedItem.from_pointer(&self._heap, entry.getData())
 
 	def clear(self):
 		self._heap.clear()
@@ -349,13 +349,13 @@ cdef class KeyedPQ:
 			preincrement(self._ts),
 		))
 
-		return Item.from_pointer(&self._heap, e_pointer)
+		return KeyedItem.from_pointer(&self._heap, e_pointer)
 
 	def change_value(self, object identifier, double value):
 		cdef Entry* e = self._entry_from_identifier(identifier)
 		self._heap[e.index].setValue(value, preincrement(self._ts))
 		self._heap.fix(e.index)
-		return Item.from_pointer(&self._heap, e)
+		return KeyedItem.from_pointer(&self._heap, e)
 
 	def add_or_change_value(self, object key, double value, object data):
 		cdef string string_key = stringify(key)
@@ -364,7 +364,7 @@ cdef class KeyedPQ:
 			e = self._lookup(string_key)
 			self._heap[e.index].setValue(value, preincrement(self._ts))
 			self._heap.fix(e.index)
-			return Item.from_pointer(&self._heap, e)
+			return KeyedItem.from_pointer(&self._heap, e)
 		except KeyError:
 			return self.add(key, value, data)
 
@@ -372,7 +372,7 @@ cdef class KeyedPQ:
 		if self._heap.size() == 0:
 			raise IndexError("PQ is empty")
 
-		return Item.from_pointer(&self._heap, self._heap.top().getData())
+		return KeyedItem.from_pointer(&self._heap, self._heap.top().getData())
 
 	def pop(self):
 		if self._heap.size() == 0:
@@ -394,19 +394,19 @@ cdef class KeyedPQ:
 		cdef AnyBinHeap[HeapEntry].ordered_iterable iterable = self._heap.orderedIterable()
 		cdef HeapEntry entry
 		for entry in iterable:
-			yield Item.from_pointer(&self._heap, entry.getData())
+			yield KeyedItem.from_pointer(&self._heap, entry.getData())
 
 	cdef Entry* _lookup(self, string key) except +KeyError:
 		return &self._lookup_map.at(key)
 
 	cdef Entry* _entry_from_identifier(self, object identifier) except *:
 		cdef Entry* e
-		if type(identifier) is Item:
-			if (<Item>identifier)._e is NULL:
-				raise KeyError("Passed identifier (of type Item) does not reference a PQ entry")
-			e = (<Item>identifier)._e
+		if type(identifier) is KeyedItem:
+			if (<KeyedItem>identifier)._e is NULL:
+				raise KeyError("Passed identifier (of type KeyedItem) does not reference a PQ entry")
+			e = (<KeyedItem>identifier)._e
 			if e.index >= self._heap.size() or self._heap[e.index].getData() != e:
-				raise KeyError("Passed identifier (of type Item) is not known to the PQ")
+				raise KeyError("Passed identifier (of type KeyedItem) is not known to the PQ")
 			return e
 
 		cdef string key = stringify(identifier)
