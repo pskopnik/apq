@@ -21,7 +21,7 @@ ifneq ($(TEST_PATTERN),)
 endif
 
 $(LIB_DIR)/apq$(EXTENSION_SUFFIX) $(CYTHON_CPPS) $(CYTHON_HTMLS): $(CYTHON_SRCS) $(SRC_DIRS)/cpp/binheap.hpp
-	$(PIPENV) run python setup.py build_ext --transpile-cython
+	$(PIPENV) run python setup.py transpile_cython build_ext
 
 $(EXTENSION_LIBRARY): $(LIB_DIR)/$(EXTENSION_LIBRARY)
 	cp $< $@
@@ -43,7 +43,7 @@ endif
 	$(PIPENV) run python -m bench.basic
 
 build-dist:
-	$(PIPENV) run python setup.py sdist bdist_wheel --transpile-cython
+	$(PIPENV) run python setup.py transpile_cython sdist bdist_wheel
 
 clean:
 	$(RM) -f $(CYTHON_CPPS) $(CYTHON_HTMLS)

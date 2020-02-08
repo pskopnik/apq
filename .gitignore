@@ -1,4 +1,5 @@
 .mypy_cache/
+.pytest_cache/
 
 pyx_src/apq.cpp
 pyx_src/apq.html

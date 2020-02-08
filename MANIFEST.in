@@ -1,3 +1,9 @@
+include MANIFEST.in
+include LICENSE
+include README.md
+include setup.py
+include pyproject.toml
+
 include pyx_src/cpp/binheap.hpp
 include pyx_src/apq.pyx
 include pyx_src/apq.cpp

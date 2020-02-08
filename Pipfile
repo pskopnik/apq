@@ -8,6 +8,7 @@ cython = "*"
 mypy = "*"
 pqdict = "*"
 pytest = "*"
+toml = "*"
 
 [packages]
 apq = {editable = true,path = "."}
