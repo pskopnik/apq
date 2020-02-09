@@ -4,6 +4,9 @@ include README.md
 include setup.py
 include pyproject.toml
 
+include versioneer.py
+include py_src/apq/_version.py
+
 include pyx_src/cpp/binheap.hpp
 include pyx_src/apq.pyx
 include pyx_src/apq.cpp

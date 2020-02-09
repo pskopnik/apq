@@ -7,6 +7,10 @@ from setuptools.command.sdist import sdist as sdist_
 from setuptools.extension import Extension
 import sys
 
+import versioneer
+
+cmdclass=versioneer.get_cmdclass()
+
 try:
 	from Cython.Build import cythonize
 	cython_installed = True
@@ -202,6 +206,10 @@ class CheckOutdatedMixin(object):
 						)
 
 
+if 'build_ext' in cmdclass:
+	build_ext_ = cmdclass['build_ext']
+
+
 class build_ext(CheckOutdatedMixin, build_ext_):
 	user_options = build_ext_.user_options + \
 		CheckOutdatedMixin.checking_stuff_user_options
@@ -211,6 +219,10 @@ class build_ext(CheckOutdatedMixin, build_ext_):
 	def run(self):
 		self.check_extensions()
 		super(build_ext, self).run()
+
+
+if 'sdist' in cmdclass:
+	sdist_ = cmdclass['sdist']
 
 
 class sdist(CheckOutdatedMixin, sdist_):
@@ -247,6 +259,11 @@ class sdist(CheckOutdatedMixin, sdist_):
 			with open(pyproject_path, 'w') as f:
 				toml.dump(config, f)
 
+cmdclass.update({
+	'transpile_cython': transpile_cython,
+	'build_ext': build_ext,
+	'sdist': sdist,
+})
 
 extensions = [
 	Extension('apq', ['pyx_src/apq.pyx'],
@@ -260,7 +277,7 @@ with open('README.md') as file:
 
 setup(
 	name = 'apq',
-	version = '0.6.3.dev2',
+	version = versioneer.get_version(),
 	license = 'MIT',
 	author = 'Paul Skopnik',
 	author_email = 'paul@skopnik.me',
@@ -279,11 +296,7 @@ setup(
 	package_data = {'apq': ['*.pyi', 'py.typed']},
 	zip_safe = False,
 	python_requires = ">=3.6, <4",
-	cmdclass = {
-		'transpile_cython': transpile_cython,
-		'build_ext': build_ext,
-		'sdist': sdist,
-	},
+	cmdclass = cmdclass,
 	ext_modules = decythonize(
 		extensions,
 		annotate = True,

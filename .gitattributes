@@ -1,0 +1,2 @@
+py_src/_version.py export-subst
+py_src/apq/_version.py export-subst

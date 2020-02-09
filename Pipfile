@@ -9,6 +9,7 @@ mypy = "*"
 pqdict = "*"
 pytest = "*"
 toml = "*"
+versioneer = "*"
 
 [packages]
 apq = {editable = true,path = "."}
