@@ -20,8 +20,11 @@ ifneq ($(TEST_PATTERN),)
 	TEST_FLAGS := -k $(TEST_PATTERN)
 endif
 
-$(LIB_DIR)/apq$(EXTENSION_SUFFIX) $(CYTHON_CPPS) $(CYTHON_HTMLS): $(CYTHON_SRCS) $(SRC_DIRS)/cpp/binheap.hpp
-	$(PIPENV) run python setup.py transpile_cython build_ext
+$(CYTHON_CPPS) $(CYTHON_HTMLS): $(CYTHON_SRCS)
+	$(PIPENV) run python setup.py transpile_cython
+
+$(LIB_DIR)/apq$(EXTENSION_SUFFIX): $(CYTHON_CPPS) $(SRC_DIRS)/cpp/binheap.hpp
+	$(PIPENV) run python setup.py build_ext
 
 $(EXTENSION_LIBRARY): $(LIB_DIR)/$(EXTENSION_LIBRARY)
 	cp $< $@
