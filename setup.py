@@ -23,7 +23,7 @@ if cython_installed:
 	# A clear error message will be emitted if new_built_ext has been renamed.
 	from Cython.Distutils.build_ext import new_build_ext as build_ext_
 else:
-	from setuptools.commands.build_ext import build_ext as build_ext_
+	from setuptools.command.build_ext import build_ext as build_ext_
 
 cpp_missing_msg = ' '.join((
 	'{cpp_path!r} is missing.',
@@ -174,7 +174,7 @@ class CheckOutdatedMixin(object):
 
 		# Should have parsed language!
 
-		self.check_extensions(module_list)
+		# TODO
 
 	def check_extensions(self):
 		for extension in self.distribution.ext_modules:
